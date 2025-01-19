@@ -1,13 +1,17 @@
 package gui
 
+
 import (
 	"unicode"
+	// "fmt"
 
 	"github.com/jesseduffield/gocui"
 )
 
 func (gui *Gui) handleEditorKeypress(textArea *gocui.TextArea, key gocui.Key, ch rune, mod gocui.Modifier, allowMultiline bool) bool {
 	switch {
+	case key == gocui.KeyBackspace2 && (mod&gocui.ModAlt) != 0:
+	    textArea.BackSpaceWord()
 	case key == gocui.KeyBackspace || key == gocui.KeyBackspace2:
 		textArea.BackSpaceChar()
 	case key == gocui.KeyCtrlD || key == gocui.KeyDelete:
