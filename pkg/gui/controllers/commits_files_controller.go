@@ -107,10 +107,17 @@ func (self *CommitFilesController) GetKeybindings(opts types.KeybindingsOpts) []
 		},
 		{
 			Key:               opts.GetKey(opts.Config.Universal.GoInto),
-			Handler:           self.withItem(self.enter),
+			Handler:           self.enterOrEdit,
 			GetDisabledReason: self.require(self.singleItemSelected()),
 			Description:       self.c.Tr.EnterCommitFile,
 			Tooltip:           self.c.Tr.EnterCommitFileTooltip,
+		},
+		{
+			Key:				keybindings.GetKey("O"),
+			Handler:			self.withItem(self.enter),
+			GetDisabledReason: self.require(self.singleItemSelected()),
+			Description:		self.c.Tr.EnterCommitFile,
+			Tooltip:			self.c.Tr.EnterCommitFileTooltip,
 		},
 		{
 			Key:         opts.GetKey(opts.Config.Files.ToggleTreeView),
@@ -569,4 +576,16 @@ func (self *CommitFilesController) isInTreeMode() *types.DisabledReason {
 	}
 
 	return nil
+}
+
+// enterOrEdit: In Commit Files pane, Enter edits files; otherwise GoInto staging/collapse dir
+func (self *CommitFilesController) enterOrEdit() error {
+    node := self.context().GetSelected()
+    if node == nil {
+        return nil
+    }
+    if node.IsFile() {
+        return self.edit([]*filetree.CommitFileNode{node})
+    }
+    return self.withItem(self.enter)()
 }
