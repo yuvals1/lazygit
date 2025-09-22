@@ -8,6 +8,7 @@ import (
 
 	"github.com/jesseduffield/generics/set"
 	"github.com/jesseduffield/gocui"
+	"github.com/jesseduffield/lazygit/pkg/gui/keybindings"
 	"github.com/jesseduffield/lazygit/pkg/commands/git_commands"
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
@@ -137,10 +138,17 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 		},
 		{
 			Key:               opts.GetKey(opts.Config.Universal.GoInto),
-			Handler:           self.enter,
+			Handler:           self.enterOrEdit,
 			GetDisabledReason: self.require(self.singleItemSelected()),
 			Description:       self.c.Tr.FileEnter,
 			Tooltip:           self.c.Tr.FileEnterTooltip,
+		},
+		{
+			Key:				keybindings.GetKey("O"),
+			Handler:			self.enter,
+			GetDisabledReason: self.require(self.singleItemSelected()),
+			Description:		self.c.Tr.FileEnter,
+			Tooltip:			self.c.Tr.FileEnterTooltip,
 		},
 		{
 			Key:               opts.GetKey(opts.Config.Universal.Remove),
@@ -1409,4 +1417,16 @@ func (self *FilesController) isInTreeMode() *types.DisabledReason {
 	}
 
 	return nil
+}
+
+// enterOrEdit: In Files pane, Enter edits files; for other items, go into staging/collapse dir
+func (self *FilesController) enterOrEdit() error {
+    node := self.context().GetSelected()
+    if node == nil {
+        return nil
+    }
+    if node.IsFile() {
+        return self.edit([]*filetree.FileNode{node})
+    }
+    return self.enter()
 }
