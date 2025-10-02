@@ -211,6 +211,16 @@ func (self *FilesController) GetKeybindings(opts types.KeybindingsOpts) []*types
 			Tooltip:           self.c.Tr.ExpandAllTooltip,
 			GetDisabledReason: self.require(self.isInTreeMode),
 		},
+		{
+			Key:         keybindings.GetKey("E"),
+			Handler:     self.openRepoInEditor,
+			Description: "Open repo in editor",
+		},
+		{
+			Key:         keybindings.GetKey("n"),
+			Handler:     self.openRepoInEditor,
+			Description: "Open repo in editor",
+		},
 	}
 }
 
@@ -1429,4 +1439,11 @@ func (self *FilesController) enterOrEdit() error {
         return self.edit([]*filetree.FileNode{node})
     }
     return self.enter()
+}
+
+func (self *FilesController) openRepoInEditor() error {
+	// Just run nvim without args to show dashboard
+	return self.c.RunSubprocessAndRefresh(
+		self.c.OS().Cmd.NewShell("nvim", ""),
+	)
 }
