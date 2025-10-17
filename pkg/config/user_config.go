@@ -872,7 +872,7 @@ func GetDefaultConfig() *UserConfig {
 				GotoBottom:                        ">",
 				GotoTopAlt:                        "<home>",
 				GotoBottomAlt:                     "<end>",
-				ToggleRangeSelect:                 "v",
+				ToggleRangeSelect:                 "V",
 				RangeSelectDown:                   "<s-down>",
 				RangeSelectUp:                     "<s-up>",
 				PrevBlock:                         "<left>",

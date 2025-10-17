@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/jesseduffield/gocui"
+	"github.com/jesseduffield/lazygit/pkg/gui/keybindings"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 )
 
@@ -143,6 +144,11 @@ func (self *GlobalController) GetKeybindings(opts types.KeybindingsOpts) []*type
 			Description: self.c.Tr.ToggleWhitespaceInDiffView,
 			Tooltip:     self.c.Tr.ToggleWhitespaceInDiffViewTooltip,
 		},
+		{
+			Key:         keybindings.GetKey("v"),
+			Handler:     self.openRepoInEditor,
+			Description: "Open repo in editor",
+		},
 	}
 }
 
@@ -231,4 +237,11 @@ func (self *GlobalController) canShowRebaseOptions() *types.DisabledReason {
 		}
 	}
 	return nil
+}
+
+func (self *GlobalController) openRepoInEditor() error {
+	// Just run nvim without args to show dashboard
+	return self.c.RunSubprocessAndRefresh(
+		self.c.OS().Cmd.NewShell("nvim", ""),
+	)
 }
