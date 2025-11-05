@@ -405,10 +405,34 @@ func getExtrasWindowSize(args WindowArrangementArgs) int {
 	return baseSize + frameSize
 }
 
-// The stash window by default only contains one line so that it's not hogging
-// too much space, but if you access it it should take up some space. This is
+// These windows (branches, commits, stash) by default only contain 3 lines so that they're not hogging
+// too much space, but if you access them they should take up proportional space. This is
 // the default behaviour when accordion mode is NOT in effect. If it is in effect
-// then when it's accessed it will have weight 2, not 1.
+// then when accessed they will have the configured expandedSidePanelWeight, not 1.
+func getDefaultBranchesWindowBox(args WindowArrangementArgs) *boxlayout.Box {
+	box := &boxlayout.Box{Window: "branches"}
+	// if the branches window is anywhere in our stack we should enlargen it
+	if args.CurrentSideWindow == "branches" {
+		box.Weight = 1
+	} else {
+		box.Size = 3
+	}
+
+	return box
+}
+
+func getDefaultCommitsWindowBox(args WindowArrangementArgs) *boxlayout.Box {
+	box := &boxlayout.Box{Window: "commits"}
+	// if the commits window is anywhere in our stack we should enlargen it
+	if args.CurrentSideWindow == "commits" {
+		box.Weight = 1
+	} else {
+		box.Size = 3
+	}
+
+	return box
+}
+
 func getDefaultStashWindowBox(args WindowArrangementArgs) *boxlayout.Box {
 	box := &boxlayout.Box{Window: "stash"}
 	// if the stash window is anywhere in our stack we should enlargen it
@@ -464,8 +488,8 @@ func sidePanelChildren(args WindowArrangementArgs) func(width int, height int) [
 					Size:   3,
 				},
 				accordionBox(&boxlayout.Box{Window: "files", Weight: 1}),
-				accordionBox(&boxlayout.Box{Window: "branches", Weight: 1}),
-				accordionBox(&boxlayout.Box{Window: "commits", Weight: 1}),
+				accordionBox(getDefaultBranchesWindowBox(args)),
+				accordionBox(getDefaultCommitsWindowBox(args)),
 				accordionBox(getDefaultStashWindowBox(args)),
 			}
 		}
