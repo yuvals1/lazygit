@@ -158,6 +158,11 @@ func (self *GlobalController) GetKeybindings(opts types.KeybindingsOpts) []*type
 			Handler:     self.openRepoInEditor,
 			Description: "Open repo in editor",
 		},
+		{
+			Key:         keybindings.GetKey("Y"),
+			Handler:     self.openRepoInYazi,
+			Description: "Open repo in yazi",
+		},
 	}
 }
 
@@ -273,5 +278,11 @@ func (self *GlobalController) openRepoInEditor() error {
 	// Just run nvim without args to show dashboard
 	return self.c.RunSubprocessAndRefresh(
 		self.c.OS().Cmd.NewShell("nvim", ""),
+	)
+}
+
+func (self *GlobalController) openRepoInYazi() error {
+	return self.c.RunSubprocessAndRefresh(
+		self.c.OS().Cmd.NewShell("yazi", ""),
 	)
 }
