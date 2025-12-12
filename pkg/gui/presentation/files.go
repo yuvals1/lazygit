@@ -154,6 +154,13 @@ func getFileLine(
 		// when a reverse style is used in the theme, which looks ugly if you just
 		// use the default style
 		output += indentation + formatFileStatus(file, nameColor) + nameColor.Sprint(" ")
+
+		// Show numstat on the left (before filename) so it's always visible
+		if showNumstat {
+			if lineChanges := formatLineChanges(file.LinesAdded, file.LinesDeleted); lineChanges != "" {
+				output += lineChanges + " "
+			}
+		}
 	}
 
 	isSubmodule := file != nil && file.IsSubmodule(submoduleConfigs)
@@ -170,12 +177,6 @@ func getFileLine(
 
 	if isSubmodule {
 		output += theme.DefaultTextColor.Sprint(" (submodule)")
-	}
-
-	if file != nil && showNumstat {
-		if lineChanges := formatLineChanges(file.LinesAdded, file.LinesDeleted); lineChanges != "" {
-			output += " " + lineChanges
-		}
 	}
 
 	return output
