@@ -689,6 +689,7 @@ keybinding:
   branches:
     createPullRequest: o
     viewPullRequestOptions: O
+    copyBranchName: "y"
     copyPullRequestURL: <c-y>
     checkoutBranchByName: c
     forceCheckoutBranch: F

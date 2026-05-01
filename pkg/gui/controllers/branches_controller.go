@@ -84,6 +84,12 @@ func (self *BranchesController) GetKeybindings(opts types.KeybindingsOpts) []*ty
 			Description:       self.c.Tr.CopyPullRequestURL,
 		},
 		{
+			Key:               opts.GetKey(opts.Config.Branches.CopyBranchName),
+			Handler:           self.withItem(self.copyBranchName),
+			GetDisabledReason: self.require(self.singleItemSelected()),
+			Description:       self.c.Tr.CopyBranchNameToClipboard,
+		},
+		{
 			Key:         opts.GetKey(opts.Config.Branches.CheckoutBranchByName),
 			Handler:     self.checkoutByName,
 			Description: self.c.Tr.CheckoutByName,
@@ -461,6 +467,19 @@ func (self *BranchesController) copyPullRequestURL() error {
 	}
 
 	self.c.Toast(self.c.Tr.PullRequestURLCopiedToClipboard)
+
+	return nil
+}
+
+func (self *BranchesController) copyBranchName(branch *models.Branch) error {
+	branchName := branch.RefName()
+
+	self.c.LogAction(self.c.Tr.Actions.CopyToClipboard)
+	if err := self.c.OS().CopyToClipboard(branchName); err != nil {
+		return err
+	}
+
+	self.c.Toast(fmt.Sprintf("'%s' %s", branchName, self.c.Tr.CopiedToClipboard))
 
 	return nil
 }

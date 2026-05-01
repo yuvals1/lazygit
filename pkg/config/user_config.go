@@ -523,6 +523,7 @@ type KeybindingFilesConfig struct {
 type KeybindingBranchesConfig struct {
 	CreatePullRequest      string `yaml:"createPullRequest"`
 	ViewPullRequestOptions string `yaml:"viewPullRequestOptions"`
+	CopyBranchName         string `yaml:"copyBranchName"`
 	CopyPullRequestURL     string `yaml:"copyPullRequestURL"`
 	CheckoutBranchByName   string `yaml:"checkoutBranchByName"`
 	ForceCheckoutBranch    string `yaml:"forceCheckoutBranch"`
@@ -979,6 +980,7 @@ func GetDefaultConfig() *UserConfig {
 			},
 			Branches: KeybindingBranchesConfig{
 				CopyPullRequestURL:     "<c-y>",
+				CopyBranchName:         "y",
 				CreatePullRequest:      "o",
 				ViewPullRequestOptions: "O",
 				CheckoutBranchByName:   "c",
