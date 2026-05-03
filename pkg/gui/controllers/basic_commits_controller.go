@@ -62,11 +62,9 @@ func (self *BasicCommitsController) GetKeybindings(opts types.KeybindingsOpts) [
 		},
 		{
 			Key:               opts.GetKey(opts.Config.Commits.CopyCommitAttributeToClipboard),
-			Handler:           self.withItem(self.copyCommitAttribute),
+			Handler:           self.withItem(self.copyCommitHashToClipboard),
 			GetDisabledReason: self.require(self.singleItemSelected()),
-			Description:       self.c.Tr.CopyCommitAttributeToClipboard,
-			Tooltip:           self.c.Tr.CopyCommitAttributeToClipboardTooltip,
-			OpensMenu:         true,
+			Description:       self.c.Tr.CopyCommitHashToClipboard,
 		},
 		{
 			Key:               opts.GetKey(opts.Config.Commits.OpenInBrowser),
