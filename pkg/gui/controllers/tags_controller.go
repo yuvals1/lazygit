@@ -71,6 +71,12 @@ func (self *TagsController) GetKeybindings(opts types.KeybindingsOpts) []*types.
 			DisplayOnScreen:   true,
 		},
 		{
+			Key:               opts.GetKey(opts.Config.Tags.CopyTagName),
+			Handler:           self.withItem(self.copyTagName),
+			GetDisabledReason: self.require(self.singleItemSelected()),
+			Description:       self.c.Tr.CopyTagToClipboard,
+		},
+		{
 			Key:               opts.GetKey(opts.Config.Commits.ViewResetOptions),
 			Handler:           self.withItem(self.createResetMenu),
 			GetDisabledReason: self.require(self.singleItemSelected()),
@@ -90,6 +96,19 @@ func (self *TagsController) GetKeybindings(opts types.KeybindingsOpts) []*types.
 	}
 
 	return bindings
+}
+
+func (self *TagsController) copyTagName(tag *models.Tag) error {
+	tagName := tag.RefName()
+
+	self.c.LogAction(self.c.Tr.Actions.CopyToClipboard)
+	if err := self.c.OS().CopyToClipboard(tagName); err != nil {
+		return err
+	}
+
+	self.c.Toast(fmt.Sprintf("'%s' %s", tagName, self.c.Tr.CopiedToClipboard))
+
+	return nil
 }
 
 func (self *TagsController) GetOnRenderToMain() func() {

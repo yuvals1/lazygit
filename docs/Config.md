@@ -707,6 +707,8 @@ keybinding:
     sortOrder: s
   worktrees:
     viewWorktreeOptions: w
+  tags:
+    copyTagName: "y"
   commits:
     squashDown: s
     renameCommit: r

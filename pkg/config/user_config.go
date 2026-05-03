@@ -402,6 +402,7 @@ type KeybindingConfig struct {
 	Files          KeybindingFilesConfig          `yaml:"files"`
 	Branches       KeybindingBranchesConfig       `yaml:"branches"`
 	Worktrees      KeybindingWorktreesConfig      `yaml:"worktrees"`
+	Tags           KeybindingTagsConfig           `yaml:"tags"`
 	Commits        KeybindingCommitsConfig        `yaml:"commits"`
 	AmendAttribute KeybindingAmendAttributeConfig `yaml:"amendAttribute"`
 	Stash          KeybindingStashConfig          `yaml:"stash"`
@@ -544,6 +545,10 @@ type KeybindingBranchesConfig struct {
 
 type KeybindingWorktreesConfig struct {
 	ViewWorktreeOptions string `yaml:"viewWorktreeOptions"`
+}
+
+type KeybindingTagsConfig struct {
+	CopyTagName string `yaml:"copyTagName"`
 }
 
 type KeybindingCommitsConfig struct {
@@ -1001,6 +1006,9 @@ func GetDefaultConfig() *UserConfig {
 			},
 			Worktrees: KeybindingWorktreesConfig{
 				ViewWorktreeOptions: "w",
+			},
+			Tags: KeybindingTagsConfig{
+				CopyTagName: "y",
 			},
 			Commits: KeybindingCommitsConfig{
 				SquashDown:                     "s",

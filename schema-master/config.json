@@ -1047,6 +1047,9 @@
         "worktrees": {
           "$ref": "#/$defs/KeybindingWorktreesConfig"
         },
+        "tags": {
+          "$ref": "#/$defs/KeybindingTagsConfig"
+        },
         "commits": {
           "$ref": "#/$defs/KeybindingCommitsConfig"
         },
@@ -1218,6 +1221,16 @@
         "bulkMenu": {
           "type": "string",
           "default": "b"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "KeybindingTagsConfig": {
+      "properties": {
+        "copyTagName": {
+          "type": "string",
+          "default": "y"
         }
       },
       "additionalProperties": false,
