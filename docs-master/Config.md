@@ -743,6 +743,7 @@ keybinding:
   stash:
     popStash: g
     renameStash: r
+    copyStashName: "y"
   commitFiles:
     checkoutCommitFile: c
   main:

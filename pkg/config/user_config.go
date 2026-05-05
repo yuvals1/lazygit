@@ -586,8 +586,9 @@ type KeybindingAmendAttributeConfig struct {
 }
 
 type KeybindingStashConfig struct {
-	PopStash    string `yaml:"popStash"`
-	RenameStash string `yaml:"renameStash"`
+	PopStash      string `yaml:"popStash"`
+	RenameStash   string `yaml:"renameStash"`
+	CopyStashName string `yaml:"copyStashName"`
 }
 
 type KeybindingCommitFilesConfig struct {
@@ -1043,8 +1044,9 @@ func GetDefaultConfig() *UserConfig {
 				AddCoAuthor: "c",
 			},
 			Stash: KeybindingStashConfig{
-				PopStash:    "g",
-				RenameStash: "r",
+				PopStash:      "g",
+				RenameStash:   "r",
+				CopyStashName: "y",
 			},
 			CommitFiles: KeybindingCommitFilesConfig{
 				CheckoutCommitFile: "c",

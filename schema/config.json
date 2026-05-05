@@ -1181,6 +1181,10 @@
         "renameStash": {
           "type": "string",
           "default": "r"
+        },
+        "copyStashName": {
+          "type": "string",
+          "default": "y"
         }
       },
       "additionalProperties": false,

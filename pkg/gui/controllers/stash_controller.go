@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/style"
@@ -70,9 +72,28 @@ func (self *StashController) GetKeybindings(opts types.KeybindingsOpts) []*types
 			GetDisabledReason: self.require(self.singleItemSelected()),
 			Description:       self.c.Tr.RenameStash,
 		},
+		{
+			Key:               opts.GetKey(opts.Config.Stash.CopyStashName),
+			Handler:           self.withItem(self.copyStashName),
+			GetDisabledReason: self.require(self.singleItemSelected()),
+			Description:       self.c.Tr.CopyToClipboardMenu,
+		},
 	}
 
 	return bindings
+}
+
+func (self *StashController) copyStashName(stashEntry *models.StashEntry) error {
+	stashName := stashEntry.RefName()
+
+	self.c.LogAction(self.c.Tr.Actions.CopyToClipboard)
+	if err := self.c.OS().CopyToClipboard(stashName); err != nil {
+		return err
+	}
+
+	self.c.Toast(fmt.Sprintf("'%s' %s", stashName, self.c.Tr.CopiedToClipboard))
+
+	return nil
 }
 
 func (self *StashController) GetOnRenderToMain() func() {
