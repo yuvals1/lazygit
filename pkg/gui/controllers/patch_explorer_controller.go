@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/jesseduffield/gocui"
+	"github.com/jesseduffield/lazygit/pkg/constants"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 	"github.com/samber/lo"
 )
@@ -265,13 +266,13 @@ func (self *PatchExplorerController) HandleScrollRight() error {
 }
 
 func (self *PatchExplorerController) HandlePrevPage() error {
-	self.context.GetState().AdjustSelectedLineIdx(-self.context.GetViewTrait().PageDelta())
+	self.context.GetState().AdjustSelectedLineIdx(-constants.PageNavigationItemCount)
 
 	return nil
 }
 
 func (self *PatchExplorerController) HandleNextPage() error {
-	self.context.GetState().AdjustSelectedLineIdx(self.context.GetViewTrait().PageDelta())
+	self.context.GetState().AdjustSelectedLineIdx(constants.PageNavigationItemCount)
 
 	return nil
 }

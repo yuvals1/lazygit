@@ -3,6 +3,7 @@ package gui
 import (
 	"io"
 
+	"github.com/jesseduffield/lazygit/pkg/constants"
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/style"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
@@ -61,7 +62,7 @@ func (gui *Gui) scrollDownExtra() error {
 func (gui *Gui) pageUpExtrasPanel() error {
 	gui.Views.Extras.Autoscroll = false
 
-	gui.Views.Extras.ScrollUp(gui.Contexts().CommandLog.GetViewTrait().PageDelta())
+	gui.Views.Extras.ScrollUp(constants.PageNavigationItemCount)
 
 	return nil
 }
@@ -69,7 +70,7 @@ func (gui *Gui) pageUpExtrasPanel() error {
 func (gui *Gui) pageDownExtrasPanel() error {
 	gui.Views.Extras.Autoscroll = false
 
-	gui.Views.Extras.ScrollDown(gui.Contexts().CommandLog.GetViewTrait().PageDelta())
+	gui.Views.Extras.ScrollDown(constants.PageNavigationItemCount)
 
 	return nil
 }

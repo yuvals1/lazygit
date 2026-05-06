@@ -136,7 +136,8 @@ func (gui *Gui) getRandomTip() string {
 			formattedKey(config.Universal.Return),
 		),
 		fmt.Sprintf(
-			"You can page through the items of a panel using '%s' and '%s'",
+			"You can jump through the items of a panel %d at a time using '%s' and '%s'",
+			constants.PageNavigationItemCount,
 			formattedKey(config.Universal.PrevPage),
 			formattedKey(config.Universal.NextPage),
 		),

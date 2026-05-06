@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/jesseduffield/gocui"
+	"github.com/jesseduffield/lazygit/pkg/constants"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 )
 
@@ -79,12 +80,12 @@ func (self *ViewSelectionController) handleNextLine() error {
 }
 
 func (self *ViewSelectionController) handlePrevPage() error {
-	self.handleLineChange(-self.context.GetViewTrait().PageDelta())
+	self.handleLineChange(-constants.PageNavigationItemCount)
 	return nil
 }
 
 func (self *ViewSelectionController) handleNextPage() error {
-	self.handleLineChange(self.context.GetViewTrait().PageDelta())
+	self.handleLineChange(constants.PageNavigationItemCount)
 	return nil
 }
 

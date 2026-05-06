@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/jesseduffield/gocui"
+	"github.com/jesseduffield/lazygit/pkg/constants"
 	"github.com/jesseduffield/lazygit/pkg/gui/style"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 	"github.com/jesseduffield/lazygit/pkg/utils"
@@ -102,13 +103,13 @@ func (gui *Gui) scrollDownConfirmationPanel() error {
 }
 
 func (gui *Gui) pageUpConfirmationPanel() error {
-	gui.Views.Confirmation.ScrollUp(gui.Contexts().Confirmation.GetViewTrait().PageDelta())
+	gui.Views.Confirmation.ScrollUp(constants.PageNavigationItemCount)
 
 	return nil
 }
 
 func (gui *Gui) pageDownConfirmationPanel() error {
-	gui.Views.Confirmation.ScrollDown(gui.Contexts().Confirmation.GetViewTrait().PageDelta())
+	gui.Views.Confirmation.ScrollDown(constants.PageNavigationItemCount)
 
 	return nil
 }
