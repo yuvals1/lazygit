@@ -870,6 +870,9 @@ type TranslationSet struct {
 	NewBranchName                            string
 	NewBranchNameLeaveBlank                  string
 	ViewWorktreeOptions                      string
+	QuitToWorktreePath                       string
+	QuitToWorktreePathTooltip                string
+	CantQuitToMissingWorktree                string
 	CreateWorktreeFrom                       string
 	CreateWorktreeFromDetached               string
 	LcWorktree                               string
@@ -1969,6 +1972,9 @@ func EnglishTranslationSet() *TranslationSet {
 		NewBranchName:                            "New branch name",
 		NewBranchNameLeaveBlank:                  "New branch name (leave blank to checkout {{.default}})",
 		ViewWorktreeOptions:                      "View worktree options",
+		QuitToWorktreePath:                       "Quit to worktree path",
+		QuitToWorktreePathTooltip:                "Quit lazygit and change directory to the selected worktree's path. Requires the LAZYGIT_NEW_DIR_FILE shell wrapper.",
+		CantQuitToMissingWorktree:                "The selected worktree's path is missing",
 		CreateWorktreeFrom:                       "Create worktree from {{.ref}}",
 		CreateWorktreeFromDetached:               "Create worktree from {{.ref}} (detached)",
 		LcWorktree:                               "worktree",

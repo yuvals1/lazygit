@@ -3,9 +3,11 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"text/tabwriter"
 
+	"github.com/jesseduffield/gocui"
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/style"
@@ -69,6 +71,13 @@ func (self *WorktreesController) GetKeybindings(opts types.KeybindingsOpts) []*t
 			Description:       self.c.Tr.Remove,
 			Tooltip:           self.c.Tr.RemoveWorktreeTooltip,
 			DisplayOnScreen:   true,
+		},
+		{
+			Key:               opts.GetKey(opts.Config.Worktrees.QuitToWorktreePath),
+			Handler:           self.withItem(self.quitToPath),
+			GetDisabledReason: self.require(self.singleItemSelected()),
+			Description:       self.c.Tr.QuitToWorktreePath,
+			Tooltip:           self.c.Tr.QuitToWorktreePathTooltip,
 		},
 	}
 
@@ -138,6 +147,19 @@ func (self *WorktreesController) enter(worktree *models.Worktree) error {
 
 func (self *WorktreesController) open(worktree *models.Worktree) error {
 	return self.c.Helpers().Files.OpenDirInEditor(worktree.Path)
+}
+
+func (self *WorktreesController) quitToPath(worktree *models.Worktree) error {
+	if worktree.IsPathMissing {
+		return errors.New(self.c.Tr.CantQuitToMissingWorktree)
+	}
+
+	if err := os.Chdir(worktree.Path); err != nil {
+		return err
+	}
+
+	self.c.State().SetRetainOriginalDir(false)
+	return gocui.ErrQuit
 }
 
 func (self *WorktreesController) context() *context.WorktreesContext {

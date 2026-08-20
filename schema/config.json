@@ -1566,6 +1566,10 @@
         "viewWorktreeOptions": {
           "type": "string",
           "default": "w"
+        },
+        "quitToWorktreePath": {
+          "type": "string",
+          "default": "Q"
         }
       },
       "additionalProperties": false,

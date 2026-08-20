@@ -921,6 +921,7 @@ keybinding:
     sortOrder: s
   worktrees:
     viewWorktreeOptions: w
+    quitToWorktreePath: Q
   tags:
     copyTagName: "y"
   commits:

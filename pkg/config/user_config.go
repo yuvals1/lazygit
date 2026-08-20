@@ -545,6 +545,7 @@ type KeybindingBranchesConfig struct {
 
 type KeybindingWorktreesConfig struct {
 	ViewWorktreeOptions string `yaml:"viewWorktreeOptions"`
+	QuitToWorktreePath  string `yaml:"quitToWorktreePath"`
 }
 
 type KeybindingTagsConfig struct {
@@ -1007,6 +1008,7 @@ func GetDefaultConfig() *UserConfig {
 			},
 			Worktrees: KeybindingWorktreesConfig{
 				ViewWorktreeOptions: "w",
+				QuitToWorktreePath:  "Q",
 			},
 			Tags: KeybindingTagsConfig{
 				CopyTagName: "y",
