@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
@@ -81,6 +82,12 @@ func (self *RemoteBranchesController) GetKeybindings(opts types.KeybindingsOpts)
 			DisplayOnScreen:   true,
 		},
 		{
+			Key:               opts.GetKey(opts.Config.Branches.CopyBranchName),
+			Handler:           self.withItem(self.copyBranchName),
+			GetDisabledReason: self.require(self.singleItemSelected()),
+			Description:       self.c.Tr.CopyBranchNameToClipboard,
+		},
+		{
 			Key:         opts.GetKey(opts.Config.Branches.SortOrder),
 			Handler:     self.createSortMenu,
 			Description: self.c.Tr.SortOrder,
@@ -103,6 +110,19 @@ func (self *RemoteBranchesController) GetKeybindings(opts types.KeybindingsOpts)
 			Description:       self.c.Tr.OpenDiffTool,
 		},
 	}
+}
+
+func (self *RemoteBranchesController) copyBranchName(branch *models.RemoteBranch) error {
+	branchName := branch.RefName()
+
+	self.c.LogAction(self.c.Tr.Actions.CopyToClipboard)
+	if err := self.c.OS().CopyToClipboard(branchName); err != nil {
+		return err
+	}
+
+	self.c.Toast(fmt.Sprintf("'%s' %s", branchName, self.c.Tr.CopiedToClipboard))
+
+	return nil
 }
 
 func (self *RemoteBranchesController) GetOnRenderToMain() func() {
