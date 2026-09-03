@@ -709,6 +709,7 @@ keybinding:
   worktrees:
     viewWorktreeOptions: w
     quitToWorktreePath: Q
+    copyWorktreeName: "y"
   tags:
     copyTagName: "y"
   commits:

@@ -1574,6 +1574,10 @@
         "quitToWorktreePath": {
           "type": "string",
           "default": "Q"
+        },
+        "copyWorktreeName": {
+          "type": "string",
+          "default": "y"
         }
       },
       "additionalProperties": false,

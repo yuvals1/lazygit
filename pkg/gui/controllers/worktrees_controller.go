@@ -79,6 +79,12 @@ func (self *WorktreesController) GetKeybindings(opts types.KeybindingsOpts) []*t
 			Description:       self.c.Tr.QuitToWorktreePath,
 			Tooltip:           self.c.Tr.QuitToWorktreePathTooltip,
 		},
+		{
+			Key:               opts.GetKey(opts.Config.Worktrees.CopyWorktreeName),
+			Handler:           self.withItem(self.copyWorktreeName),
+			GetDisabledReason: self.require(self.singleItemSelected()),
+			Description:       self.c.Tr.CopyToClipboardMenu,
+		},
 	}
 
 	return bindings
@@ -147,6 +153,19 @@ func (self *WorktreesController) enter(worktree *models.Worktree) error {
 
 func (self *WorktreesController) open(worktree *models.Worktree) error {
 	return self.c.Helpers().Files.OpenDirInEditor(worktree.Path)
+}
+
+func (self *WorktreesController) copyWorktreeName(worktree *models.Worktree) error {
+	worktreeName := worktree.Name
+
+	self.c.LogAction(self.c.Tr.Actions.CopyToClipboard)
+	if err := self.c.OS().CopyToClipboard(worktreeName); err != nil {
+		return err
+	}
+
+	self.c.Toast(fmt.Sprintf("'%s' %s", worktreeName, self.c.Tr.CopiedToClipboard))
+
+	return nil
 }
 
 func (self *WorktreesController) quitToPath(worktree *models.Worktree) error {
