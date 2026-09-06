@@ -132,9 +132,10 @@ func TestUserConfigValidate_enums(t *testing.T) {
 			testCases: []testCase{
 				{value: "", valid: false},
 				{value: "1,2,3", valid: false},
-				{value: "1,2,3,4,5", valid: true},
-				{value: "1,2,3,4,invalid", valid: false},
-				{value: "1,2,3,4,5,6", valid: false},
+				{value: "1,2,3,4,5", valid: false},
+				{value: "1,2,3,4,5,invalid", valid: false},
+				{value: "1,2,3,4,5,6", valid: true},
+				{value: "1,2,3,4,5,6,7", valid: false},
 			},
 		},
 		{

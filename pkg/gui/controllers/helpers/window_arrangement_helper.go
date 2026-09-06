@@ -430,6 +430,18 @@ func getDefaultCommitsWindowBox(args WindowArrangementArgs) *boxlayout.Box {
 	return box
 }
 
+func getDefaultWorktreesWindowBox(args WindowArrangementArgs) *boxlayout.Box {
+	box := &boxlayout.Box{Window: "worktrees"}
+	// if the worktrees window is anywhere in our stack we should enlargen it
+	if args.CurrentSideWindow == "worktrees" {
+		box.Weight = 1
+	} else {
+		box.Size = 3
+	}
+
+	return box
+}
+
 func getDefaultStashWindowBox(args WindowArrangementArgs) *boxlayout.Box {
 	box := &boxlayout.Box{Window: "stash"}
 	// if the stash window is anywhere in our stack we should enlargen it
@@ -461,6 +473,7 @@ func sidePanelChildren(args WindowArrangementArgs) func(width int, height int) [
 
 			return []*boxlayout.Box{
 				fullHeightBox("status"),
+				fullHeightBox("worktrees"),
 				fullHeightBox("files"),
 				fullHeightBox("branches"),
 				fullHeightBox("commits"),
@@ -484,6 +497,7 @@ func sidePanelChildren(args WindowArrangementArgs) func(width int, height int) [
 					Window: "status",
 					Size:   3,
 				},
+				accordionBox(getDefaultWorktreesWindowBox(args)),
 				accordionBox(&boxlayout.Box{Window: "files", Weight: 1}),
 				accordionBox(getDefaultBranchesWindowBox(args)),
 				accordionBox(getDefaultCommitsWindowBox(args)),
@@ -512,6 +526,7 @@ func sidePanelChildren(args WindowArrangementArgs) func(width int, height int) [
 
 		return []*boxlayout.Box{
 			squashedSidePanelBox("status"),
+			squashedSidePanelBox("worktrees"),
 			squashedSidePanelBox("files"),
 			squashedSidePanelBox("branches"),
 			squashedSidePanelBox("commits"),

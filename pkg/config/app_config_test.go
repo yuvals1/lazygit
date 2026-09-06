@@ -827,6 +827,7 @@ keybinding:
     prevBlock-alt2: <backtab>
     jumpToBlock:
       - "1"
+      - "6"
       - "2"
       - "3"
       - "4"

@@ -224,18 +224,19 @@ func (gui *Gui) configureViewProperties() {
 
 		gui.Views.Status.TitlePrefix = jumpLabels[0]
 
-		gui.Views.Files.TitlePrefix = jumpLabels[1]
 		gui.Views.Worktrees.TitlePrefix = jumpLabels[1]
-		gui.Views.Submodules.TitlePrefix = jumpLabels[1]
 
-		gui.Views.Branches.TitlePrefix = jumpLabels[2]
-		gui.Views.Remotes.TitlePrefix = jumpLabels[2]
-		gui.Views.Tags.TitlePrefix = jumpLabels[2]
+		gui.Views.Files.TitlePrefix = jumpLabels[2]
+		gui.Views.Submodules.TitlePrefix = jumpLabels[2]
 
-		gui.Views.Commits.TitlePrefix = jumpLabels[3]
-		gui.Views.ReflogCommits.TitlePrefix = jumpLabels[3]
+		gui.Views.Branches.TitlePrefix = jumpLabels[3]
+		gui.Views.Remotes.TitlePrefix = jumpLabels[3]
+		gui.Views.Tags.TitlePrefix = jumpLabels[3]
 
-		gui.Views.Stash.TitlePrefix = jumpLabels[4]
+		gui.Views.Commits.TitlePrefix = jumpLabels[4]
+		gui.Views.ReflogCommits.TitlePrefix = jumpLabels[4]
+
+		gui.Views.Stash.TitlePrefix = jumpLabels[5]
 
 		gui.Views.Main.TitlePrefix = keyToTitlePrefix(gui.c.UserConfig().Keybinding.Universal.FocusMainView)
 	} else {

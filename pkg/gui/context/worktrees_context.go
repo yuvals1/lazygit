@@ -33,7 +33,7 @@ func NewWorktreesContext(c *ContextCommon) *WorktreesContext {
 		ListContextTrait: &ListContextTrait{
 			Context: NewSimpleContext(NewBaseContext(NewBaseContextOpts{
 				View:       c.Views().Worktrees,
-				WindowName: "files",
+				WindowName: "worktrees",
 				Key:        WORKTREES_CONTEXT_KEY,
 				Kind:       types.SIDE_CONTEXT,
 				Focusable:  true,
