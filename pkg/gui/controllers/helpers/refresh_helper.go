@@ -1588,14 +1588,12 @@ func (self *RefreshHelper) refreshRemotes(prevSelectedRemote *models.Remote, env
 	return remotes, nil
 }
 
-func (self *RefreshHelper) loadWorktrees(env refreshEnv, mainBranches *git_commands.MainBranches) []*models.Worktree {
+func (self *RefreshHelper) loadWorktrees(env refreshEnv) []*models.Worktree {
 	worktrees, err := env.git.Loaders.Worktrees.GetWorktrees()
 	if err != nil {
 		self.c.Log.Error(err)
 		return []*models.Worktree{}
 	}
-
-	self.enrichWorktrees(env, mainBranches, worktrees)
 
 	return worktrees
 }
@@ -1624,12 +1622,23 @@ func (self *RefreshHelper) refreshFilesFromMain(env refreshEnv, mainBranches *gi
 	self.refreshView(self.c.Contexts().FilesFromMain, env)
 }
 
-// populates each worktree's dirty status and divergence from the main branch
+// populates each worktree's dirty status and divergence from the main branch.
+// This runs git status per worktree, which can take seconds in repos with many
+// or large worktrees, so it must never gate the worktrees model write (branches
+// wait for that write): compute in the background, then apply on the UI thread
+// and re-render the worktrees view once the extra info is in.
 func (self *RefreshHelper) enrichWorktrees(env refreshEnv, mainBranches *git_commands.MainBranches, worktrees []*models.Worktree) {
 	mainBranchRefs := mainBranches.Get()
 
+	type enrichment struct {
+		isDirty bool
+		ahead   int
+		behind  int
+	}
+	results := make([]enrichment, len(worktrees))
+
 	wg := sync.WaitGroup{}
-	for _, worktree := range worktrees {
+	for i, worktree := range worktrees {
 		if worktree.IsPathMissing {
 			continue
 		}
@@ -1639,22 +1648,34 @@ func (self *RefreshHelper) enrichWorktrees(env refreshEnv, mainBranches *git_com
 			defer wg.Done()
 
 			if isDirty, err := env.git.Worktree.IsDirty(worktree.Path); err == nil {
-				worktree.IsDirty = isDirty
+				results[i].isDirty = isDirty
 			}
 
 			if len(mainBranchRefs) > 0 {
 				if ahead, behind, err := env.git.Worktree.AheadBehind(worktree.Path, mainBranchRefs[0]); err == nil {
-					worktree.AheadMain = ahead
-					worktree.BehindMain = behind
+					results[i].ahead = ahead
+					results[i].behind = behind
 				}
 			}
 		})
 	}
 	wg.Wait()
+
+	// the worktree structs are shared with the model at this point, so only
+	// mutate them on the UI thread
+	self.onUIThreadUnlessRepoChanged(env, func() {
+		for i, worktree := range worktrees {
+			worktree.IsDirty = results[i].isDirty
+			worktree.AheadMain = results[i].ahead
+			worktree.BehindMain = results[i].behind
+		}
+	})
+
+	self.refreshView(self.c.Contexts().Worktrees, env)
 }
 
 func (self *RefreshHelper) refreshWorktrees(env refreshEnv, branchesAreRefreshing bool, mainBranches *git_commands.MainBranches) {
-	worktrees := self.loadWorktrees(env, mainBranches)
+	worktrees := self.loadWorktrees(env)
 
 	self.onUIThreadUnlessRepoChanged(env, func() {
 		self.c.Model().Worktrees = worktrees
@@ -1675,6 +1696,11 @@ func (self *RefreshHelper) refreshWorktrees(env refreshEnv, branchesAreRefreshin
 		self.refreshView(self.c.Contexts().Branches, env)
 	}
 	self.refreshView(self.c.Contexts().Worktrees, env)
+
+	// the slow part (git status per worktree), deliberately after the model
+	// write and view renders so it delays nothing; it re-renders the worktrees
+	// view itself when done
+	self.enrichWorktrees(env, mainBranches, worktrees)
 }
 
 func (self *RefreshHelper) refreshStashEntries(filterPath string, env refreshEnv) {
