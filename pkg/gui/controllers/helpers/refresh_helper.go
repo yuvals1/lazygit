@@ -438,8 +438,10 @@ func (self *RefreshHelper) performRefresh(options types.RefreshOptions, calledFr
 	fileWg := sync.WaitGroup{}
 	if scopeSet.Includes(types.FILES) {
 		var capturedFiles capturedFilesState
+		var mainBranchesForDiff *git_commands.MainBranches
 		if !self.captureOnUIThread(calledFromWorker, env.background, func() {
 			capturedFiles = self.captureFilesState()
+			mainBranchesForDiff = self.c.Model().MainBranches
 		}) {
 			return
 		}
@@ -447,6 +449,9 @@ func (self *RefreshHelper) performRefresh(options types.RefreshOptions, calledFr
 		refresh("files", func() {
 			_ = self.refreshFilesAndSubmodules(capturedFiles, env)
 			fileWg.Done()
+		})
+		refresh("filesFromMain", func() {
+			self.refreshFilesFromMain(env, mainBranchesForDiff)
 		})
 	}
 
@@ -1593,6 +1598,30 @@ func (self *RefreshHelper) loadWorktrees(env refreshEnv, mainBranches *git_comma
 	self.enrichWorktrees(env, mainBranches, worktrees)
 
 	return worktrees
+}
+
+// refreshFilesFromMain loads the files that differ between the working tree and
+// the merge base with the main branch, for the files-from-main tab
+func (self *RefreshHelper) refreshFilesFromMain(env refreshEnv, mainBranches *git_commands.MainBranches) {
+	baseRef := mainBranches.GetMergeBase("HEAD")
+
+	var files []*models.CommitFile
+	if baseRef != "" {
+		var err error
+		files, err = env.git.Loaders.CommitFileLoader.GetFilesInWorktreeDiff(baseRef)
+		if err != nil {
+			self.c.Log.Error(err)
+			files = nil
+		}
+	}
+
+	self.onUIThreadUnlessRepoChanged(env, func() {
+		self.c.Model().FilesFromMain = files
+		self.c.Contexts().FilesFromMain.SetBaseRef(baseRef)
+		self.c.Contexts().FilesFromMain.CommitFileTreeViewModel.SetTree()
+	})
+
+	self.refreshView(self.c.Contexts().FilesFromMain, env)
 }
 
 // populates each worktree's dirty status and divergence from the main branch

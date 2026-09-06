@@ -171,6 +171,7 @@ func (gui *Gui) resetHelpersAndControllers() {
 		func(branches []*models.RemoteBranch) { gui.State.Model.RemoteBranches = branches },
 	)
 	worktreesController := controllers.NewWorktreesController(common)
+	filesFromMainController := controllers.NewFilesFromMainController(common)
 	undoController := controllers.NewUndoController(common)
 	globalController := controllers.NewGlobalController(common)
 	contextLinesController := controllers.NewContextLinesController(common)
@@ -354,6 +355,10 @@ func (gui *Gui) resetHelpersAndControllers() {
 
 	controllers.AttachControllers(gui.State.Contexts.Worktrees,
 		worktreesController,
+	)
+
+	controllers.AttachControllers(gui.State.Contexts.FilesFromMain,
+		filesFromMainController,
 	)
 
 	controllers.AttachControllers(gui.State.Contexts.Stash,

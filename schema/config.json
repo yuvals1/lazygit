@@ -654,6 +654,7 @@
             ],
             [
               "files",
+              "filesFromMain",
               "submodules"
             ],
             [
@@ -3710,6 +3711,7 @@
         "enum": [
           "status",
           "files",
+          "filesFromMain",
           "worktrees",
           "submodules",
           "branches",

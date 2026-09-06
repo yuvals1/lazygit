@@ -883,7 +883,7 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 			SidePanels: []SidePanel{
 				{"status"},
 				{"worktrees"},
-				{"files", "submodules"},
+				{"files", "filesFromMain", "submodules"},
 				{"branches", "remotes", "tags"},
 				{"commits", "reflog"},
 				{"stash"},

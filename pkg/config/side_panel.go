@@ -17,6 +17,7 @@ type SidePanel []string
 var ValidSidePanelTabs = []string{
 	"status",
 	"files",
+	"filesFromMain",
 	"worktrees",
 	"submodules",
 	"branches",

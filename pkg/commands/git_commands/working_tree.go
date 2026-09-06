@@ -428,6 +428,28 @@ func (self *WorkingTreeCommands) ShowFileDiff(from string, to string, reverse bo
 	return self.ShowFileDiffCmdObj(from, to, reverse, fileNames, plain).RunWithOutput()
 }
 
+// ShowWorktreeDiffAgainstRefCmdObj diffs the working tree (including
+// uncommitted changes) against the given ref, optionally limited to paths
+func (self *WorkingTreeCommands) ShowWorktreeDiffAgainstRefCmdObj(ref string, fileNames []string, plain bool) *oscommands.CmdObj {
+	colorArg := self.diffRendererConfigManager.GetColorArg()
+	if plain {
+		colorArg = "never"
+	}
+
+	cmdArgs := NewGitCmd("diff").
+		Config("diff.noprefix=false").
+		AddCommonDiffArgs(self.diffRendererConfigManager, self.UserConfig(), !plain).
+		Arg("--submodule").
+		Arg(fmt.Sprintf("--color=%s", colorArg)).
+		Arg(ref).
+		Arg("--").
+		Arg(fileNames...).
+		Dir(self.repoPaths.worktreePath).
+		ToArgv()
+
+	return self.cmd.New(cmdArgs).DontLog()
+}
+
 func (self *WorkingTreeCommands) ShowFileDiffCmdObj(from string, to string, reverse bool, fileNames []string, plain bool) *oscommands.CmdObj {
 	colorArg := self.diffRendererConfigManager.GetColorArg()
 	if plain {

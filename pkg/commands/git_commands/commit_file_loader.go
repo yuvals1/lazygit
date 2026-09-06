@@ -43,6 +43,27 @@ func (self *CommitFileLoader) GetFilesInDiff(from string, to string, reverse boo
 	return getCommitFilesFromFilenames(filenames), nil
 }
 
+// GetFilesInWorktreeDiff returns the files that differ between the working tree
+// (including uncommitted changes) and the given ref
+func (self *CommitFileLoader) GetFilesInWorktreeDiff(ref string) ([]*models.CommitFile, error) {
+	cmdArgs := NewGitCmd("diff").
+		Config("diff.noprefix=false").
+		Arg("--submodule").
+		Arg("--no-ext-diff").
+		Arg("--name-status").
+		Arg("-z").
+		Arg(fmt.Sprintf("--find-renames=%d%%", self.UserConfig().Git.RenameSimilarityThreshold)).
+		Arg(ref).
+		ToArgv()
+
+	filenames, err := self.cmd.New(cmdArgs).DontLog().RunWithOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	return getCommitFilesFromFilenames(filenames), nil
+}
+
 // filenames string is something like "MM\x00file1\x00MU\x00file2\x00AA\x00file3\x00"
 // so we need to split it by the null character and then map each status-name pair
 // to a commit file. Renames (and copies) are special: their status is followed by

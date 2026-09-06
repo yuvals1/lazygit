@@ -15,6 +15,7 @@ const (
 	LOCAL_BRANCHES_CONTEXT_KEY           types.ContextKey = "localBranches"
 	REMOTES_CONTEXT_KEY                  types.ContextKey = "remotes"
 	WORKTREES_CONTEXT_KEY                types.ContextKey = "worktrees"
+	FILES_FROM_MAIN_CONTEXT_KEY          types.ContextKey = "filesFromMain"
 	REMOTE_BRANCHES_CONTEXT_KEY          types.ContextKey = "remoteBranches"
 	TAGS_CONTEXT_KEY                     types.ContextKey = "tags"
 	LOCAL_COMMITS_CONTEXT_KEY            types.ContextKey = "commits"
@@ -57,6 +58,7 @@ var AllContextKeys = []types.ContextKey{
 	LOCAL_BRANCHES_CONTEXT_KEY,
 	REMOTES_CONTEXT_KEY,
 	WORKTREES_CONTEXT_KEY,
+	FILES_FROM_MAIN_CONTEXT_KEY,
 	REMOTE_BRANCHES_CONTEXT_KEY,
 	TAGS_CONTEXT_KEY,
 	LOCAL_COMMITS_CONTEXT_KEY,
@@ -94,6 +96,7 @@ type ContextTree struct {
 	CommitFiles                 *CommitFilesContext
 	Remotes                     *RemotesContext
 	Worktrees                   *WorktreesContext
+	FilesFromMain               *FilesFromMainContext
 	Submodules                  *SubmodulesContext
 	RemoteBranches              *RemoteBranchesContext
 	ReflogCommits               *ReflogCommitsContext
@@ -131,6 +134,7 @@ func (self *ContextTree) Flatten() []types.Context {
 		self.Status,
 		self.Snake,
 		self.Submodules,
+		self.FilesFromMain,
 		self.Worktrees,
 		self.Files,
 		self.SubCommits,

@@ -126,7 +126,7 @@ gui:
   sidePanels:
     - [status]
     - [worktrees]
-    - [files, submodules]
+    - [files, filesFromMain, submodules]
     - [branches, remotes, tags]
     - [commits, reflog]
     - [stash]
