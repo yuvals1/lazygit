@@ -25,6 +25,12 @@ type Worktree struct {
 	// unix timestamp approximating when the worktree was last worked in, based
 	// on the mtime of its git state files (zero if unknown)
 	LastActivityUnix int64
+	// whether the worktree has uncommitted changes
+	IsDirty bool
+	// number of commits the worktree's HEAD is ahead of / behind the main branch
+	// (zero when up to date or unknown)
+	AheadMain  int
+	BehindMain int
 }
 
 func (w *Worktree) RefName() string {

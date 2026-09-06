@@ -681,7 +681,38 @@ func (self *RefreshHelper) loadWorktrees() {
 		self.c.Model().Worktrees = []*models.Worktree{}
 	}
 
+	self.enrichWorktrees(worktrees)
+
 	self.c.Model().Worktrees = worktrees
+}
+
+// populates each worktree's dirty status and divergence from the main branch
+func (self *RefreshHelper) enrichWorktrees(worktrees []*models.Worktree) {
+	mainBranchRefs := self.c.Model().MainBranches.Get()
+
+	wg := sync.WaitGroup{}
+	for _, worktree := range worktrees {
+		if worktree.IsPathMissing {
+			continue
+		}
+
+		wg.Add(1)
+		go utils.Safe(func() {
+			defer wg.Done()
+
+			if isDirty, err := self.c.Git().Worktree.IsDirty(worktree.Path); err == nil {
+				worktree.IsDirty = isDirty
+			}
+
+			if len(mainBranchRefs) > 0 {
+				if ahead, behind, err := self.c.Git().Worktree.AheadBehind(worktree.Path, mainBranchRefs[0]); err == nil {
+					worktree.AheadMain = ahead
+					worktree.BehindMain = behind
+				}
+			}
+		})
+	}
+	wg.Wait()
 }
 
 func (self *RefreshHelper) refreshWorktrees() {

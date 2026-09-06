@@ -1,6 +1,8 @@
 package presentation
 
 import (
+	"fmt"
+
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/gui/presentation/icons"
 	"github.com/jesseduffield/lazygit/pkg/gui/style"
@@ -41,6 +43,22 @@ func GetWorktreeDisplayString(tr *i18n.TranslationSet, worktree *models.Worktree
 	if icons.IsIconEnabled() {
 		res = append(res, textStyle.Sprint(icon))
 	}
+
+	status := ""
+	if worktree.IsDirty {
+		status += style.FgRed.Sprint("✚")
+	}
+	divergence := ""
+	if worktree.AheadMain > 0 {
+		divergence += fmt.Sprintf("↑%d", worktree.AheadMain)
+	}
+	if worktree.BehindMain > 0 {
+		divergence += fmt.Sprintf("↓%d", worktree.BehindMain)
+	}
+	if divergence != "" {
+		status += style.FgYellow.Sprint(divergence)
+	}
+	res = append(res, status)
 
 	name := worktree.Name
 	if worktree.IsMain {
