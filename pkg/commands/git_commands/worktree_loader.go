@@ -3,6 +3,7 @@ package git_commands
 import (
 	iofs "io/fs"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -89,6 +90,7 @@ func (self *WorktreeLoader) GetWorktrees() ([]*models.Worktree, error) {
 			}
 
 			worktree.GitDir = gitDir
+			worktree.LastActivityUnix = self.lastActivity(worktree)
 		})
 	}
 	wg.Wait()
@@ -100,6 +102,11 @@ func (self *WorktreeLoader) GetWorktrees() ([]*models.Worktree, error) {
 	for index, worktree := range worktrees {
 		worktree.Name = names[index]
 	}
+
+	// sort by most recent activity first
+	sort.SliceStable(worktrees, func(i, j int) bool {
+		return worktrees[i].LastActivityUnix > worktrees[j].LastActivityUnix
+	})
 
 	// move current worktree to the top
 	for i, worktree := range worktrees {
@@ -150,6 +157,20 @@ func (self *WorktreeLoader) pathExists(path string) bool {
 		return false
 	}
 	return false
+}
+
+// approximates when the worktree was last worked in, based on the mtime of the
+// git state files that change on checkout/staging/committing
+func (self *WorktreeLoader) lastActivity(worktree *models.Worktree) int64 {
+	var latest int64
+	for _, file := range []string{"index", "HEAD"} {
+		if info, err := self.Fs.Stat(filepath.Join(worktree.GitDir, file)); err == nil {
+			if modTime := info.ModTime().Unix(); modTime > latest {
+				latest = modTime
+			}
+		}
+	}
+	return latest
 }
 
 func (self *WorktreeLoader) rebasedBranch(worktree *models.Worktree) (string, bool) {

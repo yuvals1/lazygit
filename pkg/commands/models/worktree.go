@@ -22,6 +22,9 @@ type Worktree struct {
 	// based on the path, but uniquified. Not the same name that git uses in the worktrees/ folder (no good reason for this,
 	// I just prefer my naming convention better)
 	Name string
+	// unix timestamp approximating when the worktree was last worked in, based
+	// on the mtime of its git state files (zero if unknown)
+	LastActivityUnix int64
 }
 
 func (w *Worktree) RefName() string {

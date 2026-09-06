@@ -6,6 +6,7 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/gui/style"
 	"github.com/jesseduffield/lazygit/pkg/i18n"
 	"github.com/jesseduffield/lazygit/pkg/theme"
+	"github.com/jesseduffield/lazygit/pkg/utils"
 	"github.com/samber/lo"
 )
 
@@ -20,11 +21,13 @@ func GetWorktreeDisplayStrings(tr *i18n.TranslationSet, worktrees []*models.Work
 func GetWorktreeDisplayString(tr *i18n.TranslationSet, worktree *models.Worktree) []string {
 	textStyle := theme.DefaultTextColor
 
-	current := ""
-	currentColor := style.FgCyan
+	recency := ""
+	recencyColor := style.FgCyan
 	if worktree.IsCurrent {
-		current = "  *"
-		currentColor = style.FgGreen
+		recency = "  *"
+		recencyColor = style.FgGreen
+	} else if worktree.LastActivityUnix > 0 {
+		recency = utils.UnixToTimeAgo(worktree.LastActivityUnix)
 	}
 
 	icon := icons.IconForWorktree(false)
@@ -34,7 +37,7 @@ func GetWorktreeDisplayString(tr *i18n.TranslationSet, worktree *models.Worktree
 	}
 
 	res := []string{}
-	res = append(res, currentColor.Sprint(current))
+	res = append(res, recencyColor.Sprint(recency))
 	if icons.IsIconEnabled() {
 		res = append(res, textStyle.Sprint(icon))
 	}
