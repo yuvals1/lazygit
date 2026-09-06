@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jesseduffield/gocui"
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
+	"github.com/jesseduffield/lazygit/pkg/gocui"
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/style"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
@@ -39,7 +39,7 @@ func NewTagsController(
 func (self *TagsController) GetKeybindings(opts types.KeybindingsOpts) []*types.Binding {
 	bindings := []*types.Binding{
 		{
-			Key:               opts.GetKey(opts.Config.Universal.Select),
+			Keys:              opts.GetKeys(opts.Config.Universal.Select),
 			Handler:           self.withItem(self.checkout),
 			GetDisabledReason: self.require(self.singleItemSelected()),
 			Description:       self.c.Tr.Checkout,
@@ -47,14 +47,20 @@ func (self *TagsController) GetKeybindings(opts types.KeybindingsOpts) []*types.
 			DisplayOnScreen:   true,
 		},
 		{
-			Key:             opts.GetKey(opts.Config.Universal.New),
+			Keys:            opts.GetKeys(opts.Config.Universal.New),
 			Handler:         self.create,
 			Description:     self.c.Tr.NewTag,
 			Tooltip:         self.c.Tr.NewTagTooltip,
 			DisplayOnScreen: true,
 		},
 		{
-			Key:               opts.GetKey(opts.Config.Universal.Remove),
+			Keys:        opts.GetKeys(opts.Config.Universal.NewWorktree),
+			Handler:     self.withItem(self.c.Helpers().Worktree.NewWorktreeMenuForTag),
+			Description: self.c.Tr.NewWorktree,
+			OpensMenu:   true,
+		},
+		{
+			Keys:              opts.GetKeys(opts.Config.Universal.Remove),
 			Handler:           self.withItem(self.delete),
 			Description:       self.c.Tr.Delete,
 			GetDisabledReason: self.require(self.singleItemSelected()),
@@ -63,7 +69,7 @@ func (self *TagsController) GetKeybindings(opts types.KeybindingsOpts) []*types.
 			DisplayOnScreen:   true,
 		},
 		{
-			Key:               opts.GetKey(opts.Config.Branches.PushTag),
+			Keys:              opts.GetKeys(opts.Config.Branches.PushTag),
 			Handler:           self.withItem(self.push),
 			GetDisabledReason: self.require(self.singleItemSelected()),
 			Description:       self.c.Tr.PushTag,
@@ -71,13 +77,13 @@ func (self *TagsController) GetKeybindings(opts types.KeybindingsOpts) []*types.
 			DisplayOnScreen:   true,
 		},
 		{
-			Key:               opts.GetKey(opts.Config.Tags.CopyTagName),
+			Keys:              opts.GetKeys(opts.Config.Tags.CopyTagName),
 			Handler:           self.withItem(self.copyTagName),
 			GetDisabledReason: self.require(self.singleItemSelected()),
 			Description:       self.c.Tr.CopyTagToClipboard,
 		},
 		{
-			Key:               opts.GetKey(opts.Config.Commits.ViewResetOptions),
+			Keys:              opts.GetKeys(opts.Config.Commits.ViewResetOptions),
 			Handler:           self.withItem(self.createResetMenu),
 			GetDisabledReason: self.require(self.singleItemSelected()),
 			Description:       self.c.Tr.Reset,
@@ -86,7 +92,7 @@ func (self *TagsController) GetKeybindings(opts types.KeybindingsOpts) []*types.
 			OpensMenu:         true,
 		},
 		{
-			Key: opts.GetKey(opts.Config.Universal.OpenDiffTool),
+			Keys: opts.GetKeys(opts.Config.Universal.OpenDiffTool),
 			Handler: self.withItem(func(selectedTag *models.Tag) error {
 				return self.c.Helpers().Diff.OpenDiffToolForRef(selectedTag)
 			}),
@@ -181,7 +187,7 @@ func (self *TagsController) localDelete(tag *models.Tag) error {
 	return self.c.WithWaitingStatus(self.c.Tr.DeletingStatus, func(gocui.Task) error {
 		self.c.LogAction(self.c.Tr.Actions.DeleteLocalTag)
 		err := self.c.Git().Tag.LocalDelete(tag.Name)
-		self.c.Refresh(types.RefreshOptions{Mode: types.ASYNC, Scope: []types.RefreshableView{types.COMMITS, types.TAGS}})
+		self.c.RefreshFromWorker(types.RefreshOptions{Scope: []types.RefreshableView{types.COMMITS, types.TAGS}})
 		return err
 	})
 }
@@ -223,7 +229,7 @@ func (self *TagsController) remoteDelete(tag *models.Tag) error {
 							return err
 						}
 						self.c.Toast(self.c.Tr.RemoteTagDeletedMessage)
-						self.c.Refresh(types.RefreshOptions{Mode: types.ASYNC, Scope: []types.RefreshableView{types.COMMITS, types.TAGS}})
+						self.c.RefreshFromWorker(types.RefreshOptions{Scope: []types.RefreshableView{types.COMMITS, types.TAGS}})
 						return nil
 					})
 				},
@@ -277,7 +283,7 @@ func (self *TagsController) localAndRemoteDelete(tag *models.Tag) error {
 						if err := self.c.Git().Tag.LocalDelete(tag.Name); err != nil {
 							return err
 						}
-						self.c.Refresh(types.RefreshOptions{Mode: types.ASYNC, Scope: []types.RefreshableView{types.COMMITS, types.TAGS}})
+						self.c.RefreshFromWorker(types.RefreshOptions{Scope: []types.RefreshableView{types.COMMITS, types.TAGS}})
 						return nil
 					})
 				},
@@ -301,14 +307,14 @@ func (self *TagsController) delete(tag *models.Tag) error {
 	menuItems := []*types.MenuItem{
 		{
 			Label: self.c.Tr.DeleteLocalTag,
-			Key:   'c',
+			Keys:  menuKey('c'),
 			OnPress: func() error {
 				return self.localDelete(tag)
 			},
 		},
 		{
 			Label:     self.c.Tr.DeleteRemoteTag,
-			Key:       'r',
+			Keys:      menuKey('r'),
 			OpensMenu: true,
 			OnPress: func() error {
 				return self.remoteDelete(tag)
@@ -316,7 +322,7 @@ func (self *TagsController) delete(tag *models.Tag) error {
 		},
 		{
 			Label:     self.c.Tr.DeleteLocalAndRemoteTag,
-			Key:       'b',
+			Keys:      menuKey('b'),
 			OpensMenu: true,
 			OnPress: func() error {
 				return self.localAndRemoteDelete(tag)
@@ -345,15 +351,7 @@ func (self *TagsController) push(tag *models.Tag) error {
 		HandleConfirm: func(response string) error {
 			return self.c.WithInlineStatus(tag, types.ItemOperationPushing, context.TAGS_CONTEXT_KEY, func(task gocui.Task) error {
 				self.c.LogAction(self.c.Tr.Actions.PushTag)
-				err := self.c.Git().Tag.Push(task, response, tag.Name)
-
-				// Render again to remove the inline status:
-				self.c.OnUIThread(func() error {
-					self.c.Contexts().Tags.HandleRender()
-					return nil
-				})
-
-				return err
+				return self.c.Git().Tag.Push(task, response, tag.Name)
 			})
 		},
 	})

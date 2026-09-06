@@ -9,6 +9,7 @@ import (
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 	"github.com/jesseduffield/lazygit/pkg/theme"
 	"github.com/jesseduffield/lazygit/pkg/utils"
+	"github.com/samber/lo"
 )
 
 type ConfirmationHelper struct {
@@ -77,9 +78,7 @@ func (self *ConfirmationHelper) wrappedPromptConfirmationFunction(
 }
 
 func (self *ConfirmationHelper) DeactivateConfirmation() {
-	self.c.Mutexes().PopupMutex.Lock()
 	self.c.State().GetRepoState().SetCurrentPopupOpts(nil)
-	self.c.Mutexes().PopupMutex.Unlock()
 
 	self.c.Views().Confirmation.Visible = false
 
@@ -87,9 +86,7 @@ func (self *ConfirmationHelper) DeactivateConfirmation() {
 }
 
 func (self *ConfirmationHelper) DeactivatePrompt() {
-	self.c.Mutexes().PopupMutex.Lock()
 	self.c.State().GetRepoState().SetCurrentPopupOpts(nil)
-	self.c.Mutexes().PopupMutex.Unlock()
 
 	self.c.Views().Prompt.Visible = false
 	self.c.Views().Suggestions.Visible = false
@@ -102,11 +99,13 @@ func getMessageHeight(wrap bool, editable bool, message string, width int, tabWi
 	return len(wrappedLines)
 }
 
-func (self *ConfirmationHelper) getPopupPanelDimensionsForContentHeight(panelWidth, contentHeight int, parentPopupContext types.Context) (int, int, int, int) {
-	return self.getPopupPanelDimensionsAux(panelWidth, contentHeight, parentPopupContext)
+func (self *ConfirmationHelper) getPopupPanelDimensionsForContentHeight(contentWidth, contentHeight int, parentPopupContext types.Context) (int, int, int, int) {
+	return self.getPopupPanelDimensionsAux(contentWidth, contentHeight, parentPopupContext)
 }
 
-func (self *ConfirmationHelper) getPopupPanelDimensionsAux(panelWidth int, panelHeight int, parentPopupContext types.Context) (int, int, int, int) {
+func (self *ConfirmationHelper) getPopupPanelDimensionsAux(contentWidth int, contentHeight int, parentPopupContext types.Context) (int, int, int, int) {
+	panelWidth := contentWidth + 2 // plus 2 for the frame
+	panelHeight := contentHeight + 2
 	width, height := self.c.GocuiGui().Size()
 	if panelHeight > height*3/4 {
 		panelHeight = height * 3 / 4
@@ -117,18 +116,23 @@ func (self *ConfirmationHelper) getPopupPanelDimensionsAux(panelWidth int, panel
 		x0, y0, _, _ := parentPopupContext.GetView().Dimensions()
 		x0 += 2
 		y0 += 1
-		return x0, y0, x0 + panelWidth, y0 + panelHeight + 1
+		return x0, y0, x0 + panelWidth - 1, y0 + panelHeight - 1
 	}
 	return width/2 - panelWidth/2,
-		height/2 - panelHeight/2 - panelHeight%2 - 1,
-		width/2 + panelWidth/2,
-		height/2 + panelHeight/2
+		height/2 - panelHeight/2 - panelHeight%2,
+		// Currently, X1/Y1 of a gocui view is one less than you would expect based on its
+		// width/height, so we need to subtract 1 here. See
+		// https://github.com/jesseduffield/lazygit/commit/f6f2a52dee8bba3ebd7e3b34b4b7c7d3e3795f3e
+		width/2 + panelWidth/2 - 1,
+		height/2 + panelHeight/2 - 1
 }
 
-func (self *ConfirmationHelper) getPopupPanelWidth() int {
+// Returns the outer width of the view, including its frame. To decide how to wrap text, subtract 2.
+// Also, note that X1-X0 of the view is one less than this.
+func (self *ConfirmationHelper) getPopupPanelWidth(maxWidth int) int {
 	width, _ := self.c.GocuiGui().Size()
-	// we want a minimum width up to a point, then we do it based on ratio.
-	panelWidth := 4 * width / 7
+	// we want a minimum width up to a point, then we do it based on ratio, but only up to the given max width
+	panelWidth := min(4*width/7, maxWidth)
 	minWidth := 80
 	if panelWidth < minWidth {
 		panelWidth = min(width-2, minWidth)
@@ -152,7 +156,7 @@ func (self *ConfirmationHelper) preparePromptPanel(
 ) {
 	self.c.Views().Prompt.Title = opts.Title
 	self.c.Views().Prompt.FgColor = theme.GocuiDefaultTextColor
-	self.c.Views().Prompt.Mask = runeForMask(opts.Mask)
+	self.c.Views().Prompt.Mask = characterForMask(opts.Mask)
 	self.c.Views().Prompt.SetOrigin(0, 0)
 
 	textArea := self.c.Views().Prompt.TextArea
@@ -173,17 +177,14 @@ func (self *ConfirmationHelper) preparePromptPanel(
 	}
 }
 
-func runeForMask(mask bool) rune {
+func characterForMask(mask bool) string {
 	if mask {
-		return '*'
+		return "*"
 	}
-	return 0
+	return ""
 }
 
 func (self *ConfirmationHelper) CreatePopupPanel(ctx goContext.Context, opts types.CreatePopupPanelOpts) {
-	self.c.Mutexes().PopupMutex.Lock()
-	defer self.c.Mutexes().PopupMutex.Unlock()
-
 	_, cancel := goContext.WithCancel(ctx)
 
 	// we don't allow interruptions of non-loader popups in case we get stuck somehow
@@ -323,19 +324,70 @@ func (self *ConfirmationHelper) ResizeCurrentPopupPanels() {
 	}
 }
 
+// The rows that a filter row adds to a menu popup: one for the input, and one
+// for its bottom border. Its top border is the menu's bottom border.
+const menuFilterRowHeight = 2
+
+// The prompts for the filter row, from the most to the least informative. The
+// keybindings menu can also filter by keybinding, which is worth spelling out
+// when there is room for it.
+func (self *ConfirmationHelper) menuFilterPromptCandidates() []string {
+	if self.c.Contexts().Menu.AllowFilteringKeybindings() {
+		return []string{self.c.Tr.FilterPrefixMenu, self.c.Tr.FilterPrefix}
+	}
+
+	return []string{self.c.Tr.FilterPrefix}
+}
+
+// Returns the first prompt that still leaves room to type in, or no prompt at
+// all if the row is too narrow even for the shortest one.
+func menuFilterPrompt(candidates []string, contentWidth int) string {
+	const minimumInputWidth = 4
+
+	for _, candidate := range candidates {
+		if utils.StringWidth(candidate)+minimumInputWidth <= contentWidth {
+			return candidate
+		}
+	}
+
+	return ""
+}
+
 func (self *ConfirmationHelper) resizeMenu(parentPopupContext types.Context) {
+	menuContext := self.c.Contexts().Menu
 	// we want the unfiltered length here so that if we're filtering we don't
 	// resize the window
-	itemCount := self.c.Contexts().Menu.UnfilteredLen()
+	itemCount := menuContext.UnfilteredLen()
 	offset := 3
-	panelWidth := self.getPopupPanelWidth()
+	panelWidth := self.getPopupPanelWidth(90)
 	contentWidth := panelWidth - 2 // minus 2 for the frame
 	promptLinesCount := self.layoutMenuPrompt(contentWidth)
-	x0, y0, x1, y1 := self.getPopupPanelDimensionsForContentHeight(panelWidth, itemCount+offset+promptLinesCount, parentPopupContext)
-	menuBottom := y1 - offset
+	// The row is reserved for the whole time the menu is open, even though it only
+	// becomes visible once the user starts typing, so that revealing it doesn't
+	// move the menu.
+	filterRowHeight := lo.Ternary(menuContext.FilterAsYouType(), menuFilterRowHeight, 0)
+	x0, y0, x1, y1 := self.getPopupPanelDimensionsForContentHeight(
+		contentWidth, itemCount+offset+promptLinesCount+filterRowHeight, parentPopupContext)
+	menuBottom := y1 - offset - filterRowHeight
 	_, _ = self.c.GocuiGui().SetView(self.c.Views().Menu.Name(), x0, y0, x1, menuBottom, 0)
 
 	tooltipTop := menuBottom + 1
+	if menuContext.FilterAsYouType() {
+		filterRowBottom := menuBottom + filterRowHeight
+		// The row hangs off the bottom of the menu, sharing its bottom border.
+		_, _ = self.c.GocuiGui().SetView(self.c.Views().MenuFilterFrame.Name(), x0, menuBottom, x1, filterRowBottom, 0)
+
+		prompt := menuFilterPrompt(self.menuFilterPromptCandidates(), contentWidth)
+		self.c.Views().MenuFilterFrame.SetContent(prompt)
+		// A view's content starts one column inside its bounds, so the input field
+		// starts one column to the left of where its text is to appear.
+		inputLeft := x0 + utils.StringWidth(prompt)
+		_, _ = self.c.GocuiGui().SetView(self.c.Views().MenuFilter.Name(), inputLeft, menuBottom, x1, filterRowBottom, 0)
+
+		if menuContext.FilterStarted() {
+			tooltipTop = filterRowBottom + 1
+		}
+	}
 	tooltip := ""
 	selectedItem := self.c.Contexts().Menu.GetSelected()
 	if selectedItem != nil {
@@ -375,12 +427,12 @@ func (self *ConfirmationHelper) layoutMenuPrompt(contentWidth int) int {
 }
 
 func (self *ConfirmationHelper) resizeConfirmationPanel(parentPopupContext types.Context) {
-	panelWidth := self.getPopupPanelWidth()
+	panelWidth := self.getPopupPanelWidth(80)
 	contentWidth := panelWidth - 2 // minus 2 for the frame
 	confirmationView := self.c.Views().Confirmation
 	prompt := confirmationView.Buffer()
-	panelHeight := getMessageHeight(true, false, prompt, contentWidth, confirmationView.TabWidth)
-	x0, y0, x1, y1 := self.getPopupPanelDimensionsAux(panelWidth, panelHeight, parentPopupContext)
+	contentHeight := getMessageHeight(true, false, prompt, contentWidth, confirmationView.TabWidth)
+	x0, y0, x1, y1 := self.getPopupPanelDimensionsAux(contentWidth, contentHeight, parentPopupContext)
 	_, _ = self.c.GocuiGui().SetView(confirmationView.Name(), x0, y0, x1, y1, 0)
 }
 
@@ -389,12 +441,12 @@ func (self *ConfirmationHelper) resizePromptPanel(parentPopupContext types.Conte
 	if self.c.Views().Suggestions.Visible {
 		suggestionsViewHeight = 11
 	}
-	panelWidth := self.getPopupPanelWidth()
+	panelWidth := self.getPopupPanelWidth(80)
 	contentWidth := panelWidth - 2 // minus 2 for the frame
 	promptView := self.c.Views().Prompt
 	prompt := promptView.TextArea.GetContent()
-	panelHeight := getMessageHeight(false, true, prompt, contentWidth, promptView.TabWidth) + suggestionsViewHeight
-	x0, y0, x1, y1 := self.getPopupPanelDimensionsAux(panelWidth, panelHeight, parentPopupContext)
+	contentHeight := getMessageHeight(false, true, prompt, contentWidth, promptView.TabWidth) + suggestionsViewHeight
+	x0, y0, x1, y1 := self.getPopupPanelDimensionsAux(contentWidth, contentHeight, parentPopupContext)
 	promptViewBottom := y1 - suggestionsViewHeight
 	_, _ = self.c.GocuiGui().SetView(promptView.Name(), x0, y0, x1, promptViewBottom, 0)
 
@@ -403,15 +455,24 @@ func (self *ConfirmationHelper) resizePromptPanel(parentPopupContext types.Conte
 }
 
 func (self *ConfirmationHelper) ResizeCommitMessagePanels(parentPopupContext types.Context) {
-	panelWidth := self.getPopupPanelWidth()
+	maxWidth := 100
+	if self.c.UserConfig().Git.Commit.AutoWrapCommitMessage {
+		// Adding some extra space to make it very obvious that we're wrapping the commit message
+		// for real, not just soft-wrapping for display at the window width.
+		maxWidth = self.c.UserConfig().Git.Commit.AutoWrapWidth + 25
+	}
+	panelWidth := self.getPopupPanelWidth(maxWidth)
+	contentWidth := panelWidth - 2 // minus 2 for the frame
 	content := self.c.Views().CommitDescription.TextArea.GetContent()
 	summaryViewHeight := 3
-	panelHeight := getMessageHeight(false, true, content, panelWidth, self.c.Views().CommitDescription.TabWidth)
+	// The width we pass to getMessageHeight is irrelevant because we don't wrap the text to the
+	// view width. If we did, we'd have to subtract 2 for the view frame.
+	contentHeight := getMessageHeight(false, true, content, contentWidth, self.c.Views().CommitDescription.TabWidth)
 	minHeight := 7
-	if panelHeight < minHeight {
-		panelHeight = minHeight
+	if contentHeight < minHeight {
+		contentHeight = minHeight
 	}
-	x0, y0, x1, y1 := self.getPopupPanelDimensionsAux(panelWidth, panelHeight, parentPopupContext)
+	x0, y0, x1, y1 := self.getPopupPanelDimensionsAux(contentWidth, contentHeight, parentPopupContext)
 
 	_, _ = self.c.GocuiGui().SetView(self.c.Views().CommitMessage.Name(), x0, y0, x1, y0+summaryViewHeight-1, 0)
 	_, _ = self.c.GocuiGui().SetView(self.c.Views().CommitDescription.Name(), x0, y0+summaryViewHeight, x1, y1+summaryViewHeight, 0)

@@ -61,12 +61,23 @@ func GetWorktreeDisplayString(tr *i18n.TranslationSet, worktree *models.Worktree
 	res = append(res, status)
 
 	name := worktree.Name
-	if worktree.IsMain {
-		name += " " + tr.MainWorktree
-	}
 	if worktree.IsPathMissing && !icons.IsIconEnabled() {
 		name += " " + tr.MissingWorktree
 	}
 	res = append(res, textStyle.Sprint(name))
+	var branch string
+	if worktree.Branch != "" {
+		branch = style.FgCyan.Sprint(worktree.Branch)
+	} else if worktree.Head != "" {
+		branch = style.FgYellow.Sprint("HEAD detached at " + utils.ShortHash(worktree.Head))
+	}
+	res = append(res, branch+mainWorktreeLabel(tr, worktree))
 	return res
+}
+
+func mainWorktreeLabel(tr *i18n.TranslationSet, worktree *models.Worktree) string {
+	if worktree.IsMain {
+		return style.FgDefault.Sprint(" " + tr.MainWorktree)
+	}
+	return ""
 }

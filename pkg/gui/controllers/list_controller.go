@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	"github.com/jesseduffield/gocui"
 	"github.com/jesseduffield/lazygit/pkg/constants"
+	"github.com/jesseduffield/lazygit/pkg/gocui"
+	"github.com/jesseduffield/lazygit/pkg/gui/controllers/helpers"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
 )
 
@@ -17,18 +18,27 @@ func NewListControllerFactory(c *ControllerCommon) *ListControllerFactory {
 }
 
 func (self *ListControllerFactory) Create(context types.IListContext) *ListController {
-	return &ListController{
+	controller := &ListController{
 		baseController: baseController{},
 		c:              self.c,
 		context:        context,
 	}
+	controller.dragAutoscroller = helpers.NewDragAutoscroller(
+		self.c.HelperCommon,
+		context,
+		func(int) bool { return context.GetList().IsSelectingRange() },
+		controller.handleDragAutoscroll,
+	)
+	return controller
 }
 
 type ListController struct {
 	baseController
 	c *ControllerCommon
 
-	context types.IListContext
+	context           types.IListContext
+	dragAutoscroller  *helpers.DragAutoscroller
+	draggingWithMouse bool
 }
 
 func (self *ListController) Context() types.Context {
@@ -105,6 +115,7 @@ func (self *ListController) handleLineChangeAux(f func(int), change int) error {
 	// doing this check so that if we're holding the up key at the start of the list
 	// we're not constantly re-rendering the main view.
 	cursorMoved := before != after
+	originYBefore := self.context.GetView().OriginY()
 	if cursorMoved {
 		switch change {
 		case -1:
@@ -117,7 +128,21 @@ func (self *ListController) handleLineChangeAux(f func(int), change int) error {
 	}
 
 	if cursorMoved || rangeBefore != rangeAfter {
+		if originYBefore != self.context.GetView().OriginY() {
+			// Since we already scrolled the view above, the normal mechanism that
+			// ListContextTrait.FocusLine uses for deciding whether rerendering is needed won't
+			// work. It is based on checking whether the origin was changed by the call to
+			// FocusPoint in that function, but since we scrolled the view directly above, the
+			// origin has already been updated. So we must tell it explicitly to rerender.
+			self.context.SetNeedRerenderVisibleLines()
+		}
+
 		self.context.HandleFocus(types.OnFocusOpts{})
+	} else {
+		// If the selection did not change (because, for example, we are at the top of the list and
+		// press up), we still want to ensure that the selection is visible. This is useful after
+		// scrolling the selection out of view with the mouse.
+		self.context.FocusLine(true)
 	}
 
 	return nil
@@ -172,11 +197,63 @@ func (self *ListController) HandleClick(opts gocui.ViewMouseBindingOpts) error {
 
 	self.context.GetList().SetSelection(newSelectedLineIdx)
 
-	if opts.IsDoubleClick && alreadyFocused && self.context.GetOnClick() != nil {
-		return self.context.GetOnClick()()
+	if opts.IsDoubleClick && alreadyFocused && self.context.GetOnDoubleClick() != nil {
+		return self.context.GetOnDoubleClick()()
 	}
+
 	self.context.HandleFocus(types.OnFocusOpts{})
+
+	// Let view-specific controllers do additional click handling
+	if self.context.GetOnClick() != nil {
+		return self.context.GetOnClick()(opts)
+	}
+
 	return nil
+}
+
+func (self *ListController) HandleDrag(opts gocui.ViewMouseBindingOpts) error {
+	self.draggingWithMouse = true
+	self.selectRangeThroughViewIndex(opts.Y)
+	originY, _ := self.context.GetViewTrait().ViewPortYBounds()
+	self.dragAutoscroller.Update(opts.Y - originY)
+	return nil
+}
+
+func (self *ListController) selectRangeThroughViewIndex(viewIndex int) {
+	list := self.context.GetList()
+	newSelectedLineIdx := self.context.ViewIndexToModelIndex(viewIndex)
+	list.ExpandNonStickyRange(newSelectedLineIdx - list.GetSelectedLineIdx())
+
+	// The pointer can be outside the viewport, in which case so is the end of
+	// the range; the drag autoscroller takes care of following it, one line at a
+	// time, for as long as the pointer stays there.
+	self.context.HandleFocus(types.OnFocusOpts{KeepScrollPosition: true})
+}
+
+func (self *ListController) handleDragAutoscroll(viewIndex int) bool {
+	if !self.context.GetList().IsSelectingRange() {
+		return false
+	}
+
+	self.context.SetNeedRerenderVisibleLines()
+	self.selectRangeThroughViewIndex(viewIndex)
+	return true
+}
+
+func (self *ListController) handleDragRelease() error {
+	self.draggingWithMouse = false
+	self.dragAutoscroller.Cancel()
+	return nil
+}
+
+func (self *ListController) GetOnFocusLost() func(types.OnFocusLostOpts) {
+	return func(types.OnFocusLostOpts) {
+		self.dragAutoscroller.Cancel()
+		if self.draggingWithMouse {
+			self.draggingWithMouse = false
+			self.c.GocuiGui().CancelMouseCapture()
+		}
+	}
 }
 
 func (self *ListController) pushContextIfNotFocused() error {
@@ -193,26 +270,22 @@ func (self *ListController) isFocused() bool {
 
 func (self *ListController) GetKeybindings(opts types.KeybindingsOpts) []*types.Binding {
 	bindings := []*types.Binding{
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.PrevItemAlt), Handler: self.HandlePrevLine},
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.PrevItem), Handler: self.HandlePrevLine},
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.NextItemAlt), Handler: self.HandleNextLine},
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.NextItem), Handler: self.HandleNextLine},
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.PrevPage), Handler: self.HandlePrevPage, Description: self.c.Tr.PrevPage},
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.NextPage), Handler: self.HandleNextPage, Description: self.c.Tr.NextPage},
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.GotoTop), Handler: self.HandleGotoTop, Description: self.c.Tr.GotoTop, Alternative: "<home>"},
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.GotoBottom), Handler: self.HandleGotoBottom, Description: self.c.Tr.GotoBottom, Alternative: "<end>"},
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.GotoTopAlt), Handler: self.HandleGotoTop},
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.GotoBottomAlt), Handler: self.HandleGotoBottom},
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.ScrollLeft), Handler: self.HandleScrollLeft},
-		{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.ScrollRight), Handler: self.HandleScrollRight},
+		{Tag: "navigation", Keys: opts.GetKeys(opts.Config.Universal.PrevItem), Handler: self.HandlePrevLine},
+		{Tag: "navigation", Keys: opts.GetKeys(opts.Config.Universal.NextItem), Handler: self.HandleNextLine},
+		{Tag: "navigation", Keys: opts.GetKeys(opts.Config.Universal.PrevPage), Handler: self.HandlePrevPage, Description: self.c.Tr.PrevPage},
+		{Tag: "navigation", Keys: opts.GetKeys(opts.Config.Universal.NextPage), Handler: self.HandleNextPage, Description: self.c.Tr.NextPage},
+		{Tag: "navigation", Keys: opts.GetKeys(opts.Config.Universal.GotoTop), Handler: self.HandleGotoTop, Description: self.c.Tr.GotoTop},
+		{Tag: "navigation", Keys: opts.GetKeys(opts.Config.Universal.GotoBottom), Handler: self.HandleGotoBottom, Description: self.c.Tr.GotoBottom},
+		{Tag: "navigation", Keys: opts.GetKeys(opts.Config.Universal.ScrollLeft), Handler: self.HandleScrollLeft},
+		{Tag: "navigation", Keys: opts.GetKeys(opts.Config.Universal.ScrollRight), Handler: self.HandleScrollRight},
 	}
 
 	if self.context.RangeSelectEnabled() {
 		bindings = append(bindings,
 			[]*types.Binding{
-				{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.ToggleRangeSelect), Handler: self.HandleToggleRangeSelect, Description: self.c.Tr.ToggleRangeSelect},
-				{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.RangeSelectDown), Handler: self.HandleRangeSelectDown, Description: self.c.Tr.RangeSelectDown},
-				{Tag: "navigation", Key: opts.GetKey(opts.Config.Universal.RangeSelectUp), Handler: self.HandleRangeSelectUp, Description: self.c.Tr.RangeSelectUp},
+				{Tag: "navigation", Keys: opts.GetKeys(opts.Config.Universal.ToggleRangeSelect), Handler: self.HandleToggleRangeSelect, Description: self.c.Tr.ToggleRangeSelect},
+				{Tag: "navigation", Keys: opts.GetKeys(opts.Config.Universal.RangeSelectDown), Handler: self.HandleRangeSelectDown, Description: self.c.Tr.RangeSelectDown},
+				{Tag: "navigation", Keys: opts.GetKeys(opts.Config.Universal.RangeSelectUp), Handler: self.HandleRangeSelectUp, Description: self.c.Tr.RangeSelectUp},
 			}...,
 		)
 	}
@@ -221,7 +294,7 @@ func (self *ListController) GetKeybindings(opts types.KeybindingsOpts) []*types.
 }
 
 func (self *ListController) GetMouseKeybindings(opts types.KeybindingsOpts) []*gocui.ViewMouseBinding {
-	return []*gocui.ViewMouseBinding{
+	bindings := []*gocui.ViewMouseBinding{
 		{
 			ViewName: self.context.GetViewName(),
 			Key:      gocui.MouseWheelUp,
@@ -238,4 +311,22 @@ func (self *ListController) GetMouseKeybindings(opts types.KeybindingsOpts) []*g
 			Handler:  func(gocui.ViewMouseBindingOpts) error { return self.HandleScrollDown() },
 		},
 	}
+
+	if self.context.RangeSelectEnabled() {
+		bindings = append(bindings,
+			&gocui.ViewMouseBinding{
+				ViewName: self.context.GetViewName(),
+				Key:      gocui.MouseLeft,
+				Modifier: gocui.ModMotion,
+				Handler:  self.HandleDrag,
+			},
+			&gocui.ViewMouseBinding{
+				ViewName: self.context.GetViewName(),
+				Key:      gocui.MouseRelease,
+				Handler:  func(gocui.ViewMouseBindingOpts) error { return self.handleDragRelease() },
+			},
+		)
+	}
+
+	return bindings
 }

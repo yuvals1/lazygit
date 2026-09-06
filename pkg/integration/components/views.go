@@ -3,7 +3,7 @@ package components
 import (
 	"fmt"
 
-	"github.com/jesseduffield/gocui"
+	"github.com/jesseduffield/lazygit/pkg/gocui"
 )
 
 type Views struct {
@@ -122,6 +122,14 @@ func (self *Views) PatchBuildingSecondary() *ViewDriver {
 
 func (self *Views) Menu() *ViewDriver {
 	return self.regularView("menu")
+}
+
+func (self *Views) MenuFilter() *ViewDriver {
+	return self.regularView("menuFilter")
+}
+
+func (self *Views) MenuFilterFrame() *ViewDriver {
+	return self.regularView("menuFilterFrame")
 }
 
 func (self *Views) Confirmation() *ViewDriver {
