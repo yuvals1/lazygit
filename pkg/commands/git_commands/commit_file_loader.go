@@ -2,6 +2,7 @@ package git_commands
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
@@ -40,7 +41,11 @@ func (self *CommitFileLoader) GetFilesInDiff(from string, to string, reverse boo
 		return nil, err
 	}
 
-	return getCommitFilesFromFilenames(filenames), nil
+	files := getCommitFilesFromFilenames(filenames)
+	self.addNumstats(files, func(cmd *GitCommandBuilder) *GitCommandBuilder {
+		return cmd.ArgIf(reverse, "-R").Arg(from).Arg(to)
+	})
+	return files, nil
 }
 
 // GetFilesInWorktreeDiff returns the files that differ between the working tree
@@ -61,7 +66,67 @@ func (self *CommitFileLoader) GetFilesInWorktreeDiff(ref string) ([]*models.Comm
 		return nil, err
 	}
 
-	return getCommitFilesFromFilenames(filenames), nil
+	files := getCommitFilesFromFilenames(filenames)
+	self.addNumstats(files, func(cmd *GitCommandBuilder) *GitCommandBuilder {
+		return cmd.Arg(ref)
+	})
+	return files, nil
+}
+
+// addNumstats runs the same diff with --numstat and fills in the line change
+// counts, keyed by (new) path. Renames in -z numstat output appear as an empty
+// third field followed by the two paths as separate entries. Binary files
+// ("-" counts) are left at zero. Only runs when numstat display is enabled.
+func (self *CommitFileLoader) addNumstats(files []*models.CommitFile, addRefArgs func(*GitCommandBuilder) *GitCommandBuilder) {
+	if !self.UserConfig().Gui.ShowNumstatInFilesView || len(files) == 0 {
+		return
+	}
+
+	cmdArgs := addRefArgs(NewGitCmd("diff").
+		Config("diff.noprefix=false").
+		Arg("--no-ext-diff").
+		Arg("--numstat").
+		Arg("-z").
+		Arg(fmt.Sprintf("--find-renames=%d%%", self.UserConfig().Git.RenameSimilarityThreshold))).
+		ToArgv()
+
+	output, err := self.cmd.New(cmdArgs).DontLog().RunWithOutput()
+	if err != nil {
+		self.Log.Error(err)
+		return
+	}
+
+	counts := map[string][2]int{}
+	chunks := strings.Split(strings.TrimRight(output, "\x00"), "\x00")
+	i := 0
+	for i < len(chunks) {
+		parts := strings.Split(chunks[i], "	")
+		if len(parts) != 3 {
+			i++
+			continue
+		}
+		name := parts[2]
+		if name == "" && i+2 < len(chunks) {
+			// rename entry: the two following chunks are the old and new path
+			name = chunks[i+2]
+			i += 3
+		} else {
+			i++
+		}
+		added, err1 := strconv.Atoi(parts[0])
+		deleted, err2 := strconv.Atoi(parts[1])
+		if err1 != nil || err2 != nil {
+			continue
+		}
+		counts[name] = [2]int{added, deleted}
+	}
+
+	for _, file := range files {
+		if c, ok := counts[file.Path]; ok {
+			file.LinesAdded = c[0]
+			file.LinesDeleted = c[1]
+		}
+	}
 }
 
 // filenames string is something like "MM\x00file1\x00MU\x00file2\x00AA\x00file3\x00"

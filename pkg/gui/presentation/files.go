@@ -267,6 +267,11 @@ func getCommitFileLine(
 		}
 
 		output += symbolStyle.Sprint(symbol) + " "
+
+		// Show numstat on the left (before filename), matching the files view
+		if lineChanges := formatLineChanges(commitFile.LinesAdded, commitFile.LinesDeleted); lineChanges != "" {
+			output += lineChanges + " "
+		}
 	}
 
 	name = utils.EscapeSpecialChars(name)
