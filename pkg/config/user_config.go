@@ -884,7 +884,8 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 			SidePanels: []SidePanel{
 				{"status"},
 				{"worktrees"},
-				{"files", "filesFromMain", "submodules"},
+				{"filesFromMain"},
+				{"files", "submodules"},
 				{"branches", "remotes", "tags"},
 				{"commits", "reflog"},
 				{"stash"},
@@ -1036,7 +1037,7 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 				NextBlockAlt:                      Keybinding{"l"},
 				PrevBlockAlt2:                     Keybinding{"<backtab>"},
 				NextBlockAlt2:                     Keybinding{"<tab>"},
-				JumpToBlock:                       []Keybinding{{"1"}, {"6"}, {"2"}, {"3"}, {"4"}, {"5"}},
+				JumpToBlock:                       []Keybinding{{"1"}, {"6"}, {"7"}, {"2"}, {"3"}, {"4"}, {"5"}},
 				FocusMainView:                     Keybinding{"0"},
 				NextMatch:                         Keybinding{"n"},
 				PrevMatch:                         Keybinding{"N"},

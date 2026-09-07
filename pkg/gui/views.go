@@ -221,6 +221,7 @@ func (gui *Gui) configureViewProperties() {
 	gui.Views.Submodules.Title = gui.c.Tr.SubmodulesTitle
 	gui.Views.Tags.Title = gui.c.Tr.TagsTitle
 	gui.Views.Files.Title = gui.c.Tr.FilesTitle
+	gui.Views.FilesFromMain.Title = gui.c.Tr.FilesFromMainTitle
 	gui.Views.PatchBuilding.Title = gui.c.Tr.Patch
 	gui.Views.PatchBuildingSecondary.Title = gui.c.Tr.CustomPatch
 	gui.Views.MergeConflicts.Title = gui.c.Tr.MergeConflictsTitle

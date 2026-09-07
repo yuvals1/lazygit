@@ -653,8 +653,10 @@
               "worktrees"
             ],
             [
+              "filesFromMain"
+            ],
+            [
               "files",
-              "filesFromMain",
               "submodules"
             ],
             [
@@ -2718,6 +2720,7 @@
           "default": [
             "1",
             "6",
+            "7",
             "2",
             "3",
             "4",

@@ -132,6 +132,22 @@ func (self *FilesFromMainController) toggleTreeView() error {
 	return nil
 }
 
+// the panel renders a one-line summary while collapsed (unfocused) and the full
+// file tree while focused, so re-render whenever focus changes. These live on
+// the controller because context-constructor hooks are cleared when controllers
+// are attached (ClearAllAttachedControllerFunctions).
+func (self *FilesFromMainController) GetOnFocus() func(types.OnFocusOpts) {
+	return func(types.OnFocusOpts) {
+		self.context().HandleRender()
+	}
+}
+
+func (self *FilesFromMainController) GetOnFocusLost() func(types.OnFocusLostOpts) {
+	return func(types.OnFocusLostOpts) {
+		self.context().HandleRender()
+	}
+}
+
 func (self *FilesFromMainController) context() *context.FilesFromMainContext {
 	return self.c.Contexts().FilesFromMain
 }

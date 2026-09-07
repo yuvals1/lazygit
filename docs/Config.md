@@ -126,7 +126,8 @@ gui:
   sidePanels:
     - [status]
     - [worktrees]
-    - [files, filesFromMain, submodules]
+    - [filesFromMain]
+    - [files, submodules]
     - [branches, remotes, tags]
     - [commits, reflog]
     - [stash]
@@ -667,6 +668,7 @@ keybinding:
     jumpToBlock:
       - "1"
       - "6"
+      - "7"
       - "2"
       - "3"
       - "4"

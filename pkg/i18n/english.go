@@ -916,6 +916,7 @@ type TranslationSet struct {
 	RemoveWorktreeTooltip                    string
 	NewBranchName                            string
 	FilesFromMainTitle                       string
+	FilesChangedFromMain                     string
 	QuitToWorktreePath                       string
 	NewWorktreeWithNewBranch                 string
 	QuitToWorktreePathTooltip                string
@@ -2081,6 +2082,7 @@ func EnglishTranslationSet() *TranslationSet {
 		RemoveWorktreeTooltip:                    "Remove the selected worktree. This will both delete the worktree's directory, as well as metadata about the worktree in the .git directory.",
 		NewBranchName:                            "New branch name",
 		FilesFromMainTitle:                       "From main",
+		FilesChangedFromMain:                     "{{.count}} files changed",
 		QuitToWorktreePath:                       "Quit to worktree path",
 		NewWorktreeWithNewBranch:                 "New worktree with new branch",
 		QuitToWorktreePathTooltip:                "Quit lazygit and change directory to the selected worktree's path. Requires the LAZYGIT_NEW_DIR_FILE shell wrapper.",

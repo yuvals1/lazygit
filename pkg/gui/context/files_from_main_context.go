@@ -1,6 +1,8 @@
 package context
 
 import (
+	"fmt"
+
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/gui/filetree"
 	"github.com/jesseduffield/lazygit/pkg/gui/presentation"
@@ -38,6 +40,16 @@ func NewFilesFromMainContext(c *ContextCommon) *FilesFromMainContext {
 	viewModel.SetRef(&mergeBaseRef{hash: ""})
 
 	getDisplayStrings := func(_ int, _ int) [][]string {
+		// when the panel is collapsed (not focused), show a one-line summary
+		// instead of the top of the file list
+		if current := c.Context().Current(); current == nil || current.GetKey() != FILES_FROM_MAIN_CONTEXT_KEY {
+			count := len(c.Model().FilesFromMain)
+			return [][]string{{style.FgYellow.Sprint(utils.ResolvePlaceholderString(
+				c.Tr.FilesChangedFromMain,
+				map[string]string{"count": fmt.Sprint(count)},
+			))}}
+		}
+
 		if viewModel.Len() == 0 {
 			return [][]string{{style.FgRed.Sprint("(none)")}}
 		}
