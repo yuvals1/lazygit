@@ -220,6 +220,7 @@ func (gui *Gui) resetHelpersAndControllers() {
 		gui.State.Contexts.Branches,
 		gui.State.Contexts.RemoteBranches,
 		gui.State.Contexts.Files,
+		gui.State.Contexts.FilesFromMain,
 		gui.State.Contexts.Submodules,
 		gui.State.Contexts.ReflogCommits,
 		gui.State.Contexts.LocalCommits,
