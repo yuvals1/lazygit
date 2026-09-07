@@ -783,6 +783,7 @@ keybinding:
   worktrees:
     quitToWorktreePath: Q
     copyWorktreeName: "y"
+    newWorktreeNewBranch: "N"
   tags:
     copyTagName: "y"
   commits:

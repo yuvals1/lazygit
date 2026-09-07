@@ -616,8 +616,9 @@ type KeybindingBranchesConfig struct {
 }
 
 type KeybindingWorktreesConfig struct {
-	QuitToWorktreePath Keybinding `yaml:"quitToWorktreePath"`
-	CopyWorktreeName   Keybinding `yaml:"copyWorktreeName"`
+	QuitToWorktreePath   Keybinding `yaml:"quitToWorktreePath"`
+	CopyWorktreeName     Keybinding `yaml:"copyWorktreeName"`
+	NewWorktreeNewBranch Keybinding `yaml:"newWorktreeNewBranch"`
 }
 
 type KeybindingTagsConfig struct {
@@ -1181,8 +1182,9 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 				CopyStashName: Keybinding{"y"},
 			},
 			Worktrees: KeybindingWorktreesConfig{
-				QuitToWorktreePath: Keybinding{"Q"},
-				CopyWorktreeName:   Keybinding{"y"},
+				QuitToWorktreePath:   Keybinding{"Q"},
+				CopyWorktreeName:     Keybinding{"y"},
+				NewWorktreeNewBranch: Keybinding{"N"},
 			},
 			Tags: KeybindingTagsConfig{
 				CopyTagName: Keybinding{"y"},

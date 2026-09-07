@@ -48,6 +48,11 @@ func (self *WorktreesController) GetKeybindings(opts types.KeybindingsOpts) []*t
 			DisplayOnScreen: true,
 		},
 		{
+			Keys:        opts.GetKeys(opts.Config.Worktrees.NewWorktreeNewBranch),
+			Handler:     self.addWithNewBranch,
+			Description: self.c.Tr.NewWorktreeWithNewBranch,
+		},
+		{
 			Keys:              opts.GetKeys(opts.Config.Universal.Select),
 			Handler:           self.withItem(self.enter),
 			GetDisabledReason: self.require(self.singleItemSelected()),
@@ -135,6 +140,10 @@ func (self *WorktreesController) GetOnRenderToMain() func() {
 
 func (self *WorktreesController) add() error {
 	return self.c.Helpers().Worktree.NewWorktree()
+}
+
+func (self *WorktreesController) addWithNewBranch() error {
+	return self.c.Helpers().Worktree.NewWorktreeWithBranch()
 }
 
 func (self *WorktreesController) remove(worktree *models.Worktree) error {

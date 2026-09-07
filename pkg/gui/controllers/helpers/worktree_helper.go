@@ -68,6 +68,31 @@ func (self *WorktreeHelper) NewWorktree() error {
 	return nil
 }
 
+// NewWorktreeWithBranch prompts for a name and always creates a new local
+// branch of that name (off the current ref) checked out in a new worktree,
+// unlike NewWorktree whose picker checks out an existing branch when the
+// typed value matches one.
+func (self *WorktreeHelper) NewWorktreeWithBranch() error {
+	self.c.Prompt(types.PromptOpts{
+		Title: self.c.Tr.NewBranchAndWorktreeName,
+		HandleConfirm: func(value string) error {
+			name := SanitizedBranchName(value)
+			if name == "" {
+				return nil
+			}
+
+			base := self.refsHelper.GetCheckedOutRef().RefName()
+			prompt := utils.ResolvePlaceholderString(self.c.Tr.WorktreeLocationPromptNewBranch,
+				map[string]string{"name": name, "base": base})
+			return self.promptForWorktreeLocation(name, prompt, func(path string) error {
+				return self.createWorktree(git_commands.NewWorktreeOpts{Path: path, Base: base, Branch: name}, context.WORKTREES_CONTEXT_KEY)
+			})
+		},
+	})
+
+	return nil
+}
+
 // newWorktreeForPickerValue classifies the value the user picked or typed in the
 // worktrees-panel picker and routes to the matching creation flow:
 //   - an existing local branch -> a worktree that checks it out;
