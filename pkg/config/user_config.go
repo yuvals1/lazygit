@@ -158,6 +158,8 @@ type GuiConfig struct {
 	FileTreeSortOrder string `yaml:"fileTreeSortOrder" jsonschema:"enum=mixed,enum=filesFirst,enum=foldersFirst"`
 	// If true (default), sort the file tree case-sensitively.
 	FileTreeSortCaseSensitive bool `yaml:"fileTreeSortCaseSensitive"`
+	// Directories matching one of these patterns start out collapsed in the file trees (useful for noisy generated directories). A pattern containing a slash is matched as a glob against the directory's path; otherwise it is matched against the directory's name at any depth, like gitignore. A directory is only collapsed automatically the first time it appears, so expanding it manually sticks.
+	AutoCollapseDirs []string `yaml:"autoCollapseDirs"`
 	// If true, show the number of lines changed per file in the Files view
 	ShowNumstatInFilesView bool `yaml:"showNumstatInFilesView"`
 	// If true, show a random tip in the command log when Lazygit starts
@@ -921,6 +923,7 @@ func GetDefaultConfigForPlatform(platform string) *UserConfig {
 			ShowRootItemInFileTree:              true,
 			FileTreeSortOrder:                   "mixed",
 			FileTreeSortCaseSensitive:           true,
+			AutoCollapseDirs:                    []string{},
 			ShowNumstatInFilesView:              false,
 			ShowRandomTip:                       true,
 			ShowIcons:                           false,

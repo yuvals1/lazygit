@@ -67,20 +67,23 @@ type FileTree struct {
 	// the remaining files are still being worked on.
 	conflictedPaths *set.Set[string]
 	collapsedPaths  *CollapsedPaths
-	textFilter      string
-	useFuzzySearch  bool
+	// internal paths of directories that have already been auto-collapsed once
+	autoCollapsedDirs *set.Set[string]
+	textFilter        string
+	useFuzzySearch    bool
 }
 
 var _ IFileTree = &FileTree{}
 
 func NewFileTree(getFiles func() []*models.File, common *common.Common, showTree bool) *FileTree {
 	return &FileTree{
-		getFiles:        getFiles,
-		common:          common,
-		showTree:        showTree,
-		filter:          DisplayAll,
-		conflictedPaths: set.New[string](),
-		collapsedPaths:  NewCollapsedPaths(),
+		getFiles:          getFiles,
+		common:            common,
+		showTree:          showTree,
+		filter:            DisplayAll,
+		conflictedPaths:   set.New[string](),
+		collapsedPaths:    NewCollapsedPaths(),
+		autoCollapsedDirs: set.New[string](),
 	}
 }
 
@@ -205,6 +208,8 @@ func (self *FileTree) SetTree() {
 	} else {
 		self.tree = BuildFlatTreeFromFiles(filesForDisplay, showRootItem, cmp)
 	}
+
+	autoCollapseDirs(self.tree, guiConfig.AutoCollapseDirs, self.collapsedPaths, self.autoCollapsedDirs)
 }
 
 func (self *FileTree) IsCollapsed(path string) bool {

@@ -181,3 +181,56 @@ func TestFileTreeSortOrderConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestAutoCollapseDirs(t *testing.T) {
+	var files []*models.File
+
+	userConfig := config.GetDefaultConfig()
+	userConfig.Gui.AutoCollapseDirs = []string{"docs"}
+	cmn := common.NewDummyCommonWithUserConfigAndAppState(userConfig, nil)
+	tree := NewFileTree(func() []*models.File { return files }, cmn, true)
+
+	files = []*models.File{
+		{Path: "docs/readme.md"},
+		{Path: "src/main.go"},
+	}
+	tree.SetTree()
+
+	nodePath := func(displayPath string) string {
+		for _, node := range tree.GetAllItems() {
+			if node.GetPath() == displayPath {
+				return node.GetInternalPath()
+			}
+		}
+		t.Fatalf("no visible node with path %q", displayPath)
+		return ""
+	}
+
+	assert.True(t, tree.IsCollapsed(nodePath("docs")))
+	assert.False(t, tree.IsCollapsed(nodePath("src")))
+
+	// expanding the directory manually sticks across refreshes
+	tree.ToggleCollapsed(nodePath("docs"))
+	tree.SetTree()
+	assert.False(t, tree.IsCollapsed(nodePath("docs")))
+
+	// a matching directory appearing later is collapsed, without re-collapsing
+	// the expanded one
+	files = []*models.File{
+		{Path: "docs/readme.md"},
+		{Path: "src/main.go"},
+		{Path: "sub/docs/other.md"},
+	}
+	tree.SetTree()
+	assert.False(t, tree.IsCollapsed(nodePath("docs")))
+	assert.True(t, tree.IsCollapsed(nodePath("sub/docs")))
+}
+
+func TestMatchesAutoCollapsePattern(t *testing.T) {
+	assert.True(t, matchesAutoCollapsePattern([]string{"docs"}, "docs"))
+	assert.True(t, matchesAutoCollapsePattern([]string{"docs"}, "deeply/nested/docs"))
+	assert.True(t, matchesAutoCollapsePattern([]string{"*_cache"}, "sub/mypy_cache"))
+	assert.False(t, matchesAutoCollapsePattern([]string{"docs"}, "docserver"))
+	assert.True(t, matchesAutoCollapsePattern([]string{"generated/docs"}, "generated/docs"))
+	assert.False(t, matchesAutoCollapsePattern([]string{"generated/docs"}, "other/docs"))
+}

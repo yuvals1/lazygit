@@ -1,6 +1,7 @@
 package filetree
 
 import (
+	"github.com/jesseduffield/generics/set"
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
 	"github.com/jesseduffield/lazygit/pkg/common"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
@@ -25,8 +26,10 @@ type CommitFileTree struct {
 	showTree       bool
 	common         *common.Common
 	collapsedPaths *CollapsedPaths
-	textFilter     string
-	useFuzzySearch bool
+	// internal paths of directories that have already been auto-collapsed once
+	autoCollapsedDirs *set.Set[string]
+	textFilter        string
+	useFuzzySearch    bool
 }
 
 func (self *CommitFileTree) CollapseAll() {
@@ -47,10 +50,11 @@ var _ ICommitFileTree = &CommitFileTree{}
 
 func NewCommitFileTree(getFiles func() []*models.CommitFile, common *common.Common, showTree bool) *CommitFileTree {
 	return &CommitFileTree{
-		getFiles:       getFiles,
-		common:         common,
-		showTree:       showTree,
-		collapsedPaths: NewCollapsedPaths(),
+		getFiles:          getFiles,
+		common:            common,
+		showTree:          showTree,
+		collapsedPaths:    NewCollapsedPaths(),
+		autoCollapsedDirs: set.New[string](),
 	}
 }
 
@@ -115,6 +119,8 @@ func (self *CommitFileTree) SetTree() {
 	} else {
 		self.tree = BuildFlatTreeFromCommitFiles(filesForDisplay, showRootItem, cmp)
 	}
+
+	autoCollapseDirs(self.tree, guiConfig.AutoCollapseDirs, self.collapsedPaths, self.autoCollapsedDirs)
 }
 
 func (self *CommitFileTree) SetTextFilter(filter string, useFuzzySearch bool) {

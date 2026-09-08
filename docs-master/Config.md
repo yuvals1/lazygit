@@ -251,6 +251,14 @@ gui:
   # If true (default), sort the file tree case-sensitively.
   fileTreeSortCaseSensitive: true
 
+  # Directories matching one of these patterns start out collapsed in the file
+  # trees (useful for noisy generated directories). A pattern containing a slash
+  # is matched as a glob against the directory's path; otherwise it is matched
+  # against the directory's name at any depth, like gitignore. A directory is only
+  # collapsed automatically the first time it appears, so expanding it manually
+  # sticks.
+  autoCollapseDirs: []
+
   # If true, show the number of lines changed per file in the Files view
   showNumstatInFilesView: false
 
