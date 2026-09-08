@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"os"
+
 	"github.com/jesseduffield/lazygit/pkg/gui/context"
 	"github.com/jesseduffield/lazygit/pkg/gui/filetree"
 	"github.com/jesseduffield/lazygit/pkg/gui/types"
@@ -62,6 +64,12 @@ func (self *FilesFromMainController) GetKeybindings(opts types.KeybindingsOpts) 
 			Handler:     self.toggleTreeView,
 			Description: self.c.Tr.ToggleTreeView,
 		},
+		{
+			Keys:        opts.GetKeys(opts.Config.Files.CopyFileInfoToClipboard),
+			Handler:     self.openCopyMenu,
+			Description: self.c.Tr.CopyToClipboardMenu,
+			OpensMenu:   true,
+		},
 	}
 }
 
@@ -102,6 +110,26 @@ func (self *FilesFromMainController) enter(node *filetree.CommitFileNode) error 
 	}
 
 	return self.c.Helpers().Files.EditFiles([]string{node.GetPath()})
+}
+
+func (self *FilesFromMainController) openCopyMenu() error {
+	return openCommitFileCopyMenu(self.c, self.context().GetSelected(), commitFileCopyMenuOpts{
+		diffForPaths: func(paths []string) (string, error) {
+			return self.c.Git().WorkingTree.
+				ShowWorktreeDiffAgainstRefCmdObj(self.context().GetBaseRef(), paths, true).
+				RunWithOutput()
+		},
+		fileContent: func(path string) (string, error) {
+			content, err := os.ReadFile(path)
+			return string(content), err
+		},
+		pathsForDiff: func(node *filetree.CommitFileNode) []string {
+			return diffPathsForNode(
+				node.Raw(), self.context().GetRoot().Raw(), self.c.Model().FilesFromMain, self.context().IsFiltering())
+		},
+		singleItemDisabledReason: self.require(self.singleItemSelected())(),
+		itemsDisabledReason:      self.require(self.itemsSelected())(),
+	})
 }
 
 func (self *FilesFromMainController) open(node *filetree.CommitFileNode) error {
