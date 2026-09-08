@@ -3,7 +3,6 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/git_commands"
@@ -199,123 +198,20 @@ func (self *CommitFilesController) GetOnRenderToMain() func() {
 	}
 }
 
-func (self *CommitFilesController) copyDiffToClipboard(paths []string, toastMessage string) error {
-	from, to := self.context().GetFromAndToForDiff()
-	from, reverse := self.c.Modes().Diffing.GetFromAndReverseArgsForDiff(from)
-
-	cmdObj := self.c.Git().WorkingTree.ShowFileDiffCmdObj(from, to, reverse, paths, true)
-	diff, err := cmdObj.RunWithOutput()
-	if err != nil {
-		return err
-	}
-	if err := self.c.OS().CopyToClipboard(diff); err != nil {
-		return err
-	}
-	self.c.Toast(toastMessage)
-	return nil
-}
-
-func (self *CommitFilesController) copyFileContentToClipboard(path string) error {
-	_, to := self.context().GetFromAndToForDiff()
-	cmdObj := self.c.Git().Commit.ShowFileContentCmdObj(to, path)
-	diff, err := cmdObj.RunWithOutput()
-	if err != nil {
-		return err
-	}
-	return self.c.OS().CopyToClipboard(diff)
-}
-
 func (self *CommitFilesController) openCopyMenu() error {
-	node := self.context().GetSelected()
-
-	copyNameItem := &types.MenuItem{
-		Label: self.c.Tr.CopyFileName,
-		OnPress: func() error {
-			if err := self.c.OS().CopyToClipboard(node.Name()); err != nil {
-				return err
-			}
-			self.c.Toast(self.c.Tr.FileNameCopiedToast)
-			return nil
+	return openCommitFileCopyMenu(self.c, self.context().GetSelected(), commitFileCopyMenuOpts{
+		diffForPaths: func(paths []string) (string, error) {
+			from, to := self.context().GetFromAndToForDiff()
+			from, reverse := self.c.Modes().Diffing.GetFromAndReverseArgsForDiff(from)
+			return self.c.Git().WorkingTree.ShowFileDiffCmdObj(from, to, reverse, paths, true).RunWithOutput()
 		},
-		DisabledReason: self.require(self.singleItemSelected())(),
-		Keys:           menuKey('n'),
-	}
-	copyRelativePathItem := &types.MenuItem{
-		Label: self.c.Tr.CopyRelativeFilePath,
-		OnPress: func() error {
-			if err := self.c.OS().CopyToClipboard(node.GetPath()); err != nil {
-				return err
-			}
-			self.c.Toast(self.c.Tr.FilePathCopiedToast)
-			return nil
+		fileContent: func(path string) (string, error) {
+			_, to := self.context().GetFromAndToForDiff()
+			return self.c.Git().Commit.ShowFileContentCmdObj(to, path).RunWithOutput()
 		},
-		DisabledReason: self.require(self.singleItemSelected())(),
-		Keys:           menuKey('p'),
-	}
-	copyAbsolutePathItem := &types.MenuItem{
-		Label: self.c.Tr.CopyAbsoluteFilePath,
-		OnPress: func() error {
-			absPath, err := filepath.Abs(node.GetPath())
-			if err != nil {
-				return err
-			}
-			if err := self.c.OS().CopyToClipboard(absPath); err != nil {
-				return err
-			}
-			self.c.Toast(self.c.Tr.FilePathCopiedToast)
-			return nil
-		},
-		DisabledReason: self.require(self.singleItemSelected())(),
-		Keys:           menuKey('P'),
-	}
-	copyFileDiffItem := &types.MenuItem{
-		Label: self.c.Tr.CopySelectedDiff,
-		OnPress: func() error {
-			return self.copyDiffToClipboard(self.pathsForDiff(node), self.c.Tr.FileDiffCopiedToast)
-		},
-		DisabledReason: self.require(self.singleItemSelected())(),
-		Keys:           menuKey('s'),
-	}
-	copyAllDiff := &types.MenuItem{
-		Label: self.c.Tr.CopyAllFilesDiff,
-		OnPress: func() error {
-			return self.copyDiffToClipboard([]string{"."}, self.c.Tr.AllFilesDiffCopiedToast)
-		},
-		DisabledReason: self.require(self.itemsSelected())(),
-		Keys:           menuKey('a'),
-	}
-	copyFileContentItem := &types.MenuItem{
-		Label: self.c.Tr.CopyFileContent,
-		OnPress: func() error {
-			if err := self.copyFileContentToClipboard(node.GetPath()); err != nil {
-				return err
-			}
-			self.c.Toast(self.c.Tr.FileContentCopiedToast)
-			return nil
-		},
-		DisabledReason: self.require(self.singleItemSelected(
-			func(node *filetree.CommitFileNode) *types.DisabledReason {
-				if !node.IsFile() {
-					return &types.DisabledReason{
-						Text:             self.c.Tr.ErrCannotCopyContentOfDirectory,
-						ShowErrorInPanel: true,
-					}
-				}
-				return nil
-			}))(),
-		Keys: menuKey('c'),
-	}
-
-	return self.c.Menu(types.CreateMenuOptions{
-		Title: self.c.Tr.CopyToClipboardMenu,
-		Items: []*types.MenuItem{
-			copyNameItem,
-			copyRelativePathItem,
-			copyAbsolutePathItem,
-			copyFileDiffItem,
-			copyAllDiff,
-			copyFileContentItem,
-		},
+		pathsForDiff:             self.pathsForDiff,
+		singleItemDisabledReason: self.require(self.singleItemSelected())(),
+		itemsDisabledReason:      self.require(self.itemsSelected())(),
 	})
 }
 
