@@ -687,6 +687,22 @@ func (self *FilesController) Context() types.Context {
 	return self.context()
 }
 
+// the panel renders a one-line summary while collapsed (unfocused) and the full
+// file tree while focused, so re-render whenever focus changes. These live on
+// the controller because context-constructor hooks are cleared when controllers
+// are attached (ClearAllAttachedControllerFunctions).
+func (self *FilesController) GetOnFocus() func(types.OnFocusOpts) {
+	return func(types.OnFocusOpts) {
+		self.context().HandleRender()
+	}
+}
+
+func (self *FilesController) GetOnFocusLost() func(types.OnFocusLostOpts) {
+	return func(types.OnFocusLostOpts) {
+		self.context().HandleRender()
+	}
+}
+
 func (self *FilesController) context() *context.WorkingTreeContext {
 	return self.c.Contexts().Files
 }

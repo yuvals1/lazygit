@@ -917,6 +917,7 @@ type TranslationSet struct {
 	NewBranchName                            string
 	FilesFromMainTitle                       string
 	FilesChangedFromMain                     string
+	DirtyFileCount                           string
 	QuitToWorktreePath                       string
 	NewWorktreeWithNewBranch                 string
 	QuitToWorktreePathTooltip                string
@@ -2083,6 +2084,7 @@ func EnglishTranslationSet() *TranslationSet {
 		NewBranchName:                            "New branch name",
 		FilesFromMainTitle:                       "From main",
 		FilesChangedFromMain:                     "{{.count}} files changed",
+		DirtyFileCount:                           "{{.count}} dirty files",
 		QuitToWorktreePath:                       "Quit to worktree path",
 		NewWorktreeWithNewBranch:                 "New worktree with new branch",
 		QuitToWorktreePathTooltip:                "Quit lazygit and change directory to the selected worktree's path. Requires the LAZYGIT_NEW_DIR_FILE shell wrapper.",
