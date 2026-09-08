@@ -488,20 +488,25 @@ func sidePanelChildren(args WindowArrangementArgs) func(width int, height int) [
 				return defaultBox
 			}
 
+			// The focused panel takes the leftover space, but the status panel has a
+			// fixed height and never does; when it's the focused one, hand the
+			// leftover space to the files panel so the column has no blank hole.
+			currentPanelIsWeightless := args.ActiveViewForWindow(args.CurrentSideWindow) == "status"
+
 			normalBox := func(window string) *boxlayout.Box {
-				// The status and stash sizing is a property of those views, so we key
-				// off the tab the window is currently showing, not the window's name
-				// (its first tab): otherwise grouping other tabs behind status or
-				// stash would wrongly impose their compact height on those tabs.
-				switch args.ActiveViewForWindow(window) {
-				case "status":
+				// The status sizing is a property of that view, so we key off the tab
+				// the window is currently showing, not the window's name (its first
+				// tab): otherwise grouping other tabs behind status would wrongly
+				// impose its compact height on those tabs.
+				activeView := args.ActiveViewForWindow(window)
+				switch {
+				case activeView == "status":
 					// The status view has a fixed height and is not expanded by accordion mode.
 					return &boxlayout.Box{Window: window, Size: 3}
-				case "files", "submodules":
+				case currentPanelIsWeightless && (activeView == "files" || activeView == "submodules"):
 					return accordionBox(&boxlayout.Box{Window: window, Weight: 1})
 				default:
-					// all other panels (worktrees, branches, commits, stash, ...)
-					// collapse to a few lines until focused, like stash upstream
+					// every panel collapses to a few lines until focused
 					return accordionBox(getDefaultStashWindowBox(args, window))
 				}
 			}
