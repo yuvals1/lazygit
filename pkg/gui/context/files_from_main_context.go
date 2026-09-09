@@ -40,9 +40,12 @@ func NewFilesFromMainContext(c *ContextCommon) *FilesFromMainContext {
 	viewModel.SetRef(&mergeBaseRef{hash: ""})
 
 	getDisplayStrings := func(_ int, _ int) [][]string {
-		// when the panel is collapsed (not focused), show a one-line summary
-		// instead of the top of the file list
-		if current := c.Context().Current(); current == nil || current.GetKey() != FILES_FROM_MAIN_CONTEXT_KEY {
+		// while another side panel is active, show a one-line summary instead of
+		// the top of the file list. Keying off the current side context (rather
+		// than the current context) keeps the file list showing while a
+		// non-side context above this panel has focus, e.g. the search prompt or
+		// the main view.
+		if current := c.Context().CurrentSide(); current == nil || current.GetKey() != FILES_FROM_MAIN_CONTEXT_KEY {
 			count := len(c.Model().FilesFromMain)
 			return [][]string{{style.FgYellow.Sprint(utils.ResolvePlaceholderString(
 				c.Tr.FilesChangedFromMain,
